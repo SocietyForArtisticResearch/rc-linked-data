@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import expo.rc_soup_parsers as rcParsers
 import expo.rc_soup_pages as rcPages
 import media.extract_copyrights as mediaParser
+import screenshots.screenshot as rcScreenshot
 from common.rc_session import rc_session
 from media.rc_merge_data import insert_copyrights
 from metrics.calc_metrics import calc_metrics
@@ -60,6 +61,7 @@ def main(url, debug):
                     toolsMetrics = calc_metrics(**toolsDict)
                     map_file = f"{media_folder}/maps/{pageNumber}.jpg"
                     generate_tools_map(map_file, 800, 600, **toolsDict)
+                    #rcScreenshot.screenshotGraphical(clean_url(page), output_media_path, pageNumber)
                 case "weave-block":
                     toolsDict = rcParsers.parse_block(parsed, debug)
                     toolsMetrics = None

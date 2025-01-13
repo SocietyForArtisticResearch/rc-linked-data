@@ -56,4 +56,4 @@ def generate_tools_map(output_file, target_width=800, target_height=600, **tools
                 draw.text((scaled_x + 5, scaled_y + 5), tool_type, fill=(0, 0, 0))
 
     img.save(output_file)
-    print(f"Image saved to {output_file}")
+    print(f"Map saved to {output_file}")

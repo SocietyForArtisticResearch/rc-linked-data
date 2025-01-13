@@ -45,15 +45,12 @@ def extract_copyrights(url, session, output_folder):
                     media_data['id'] = []
                     if 'usages' in key:
                         tool_links = data[0].find_all('a') 
-                        print(tool_links)
                         for tool_link in tool_links:
                             tool_url = tool_link.get('href')
                             if tool_url:
                                 media_data['tool'].append(tool_url)
                                 media_data['id'].append(tool_url.split('#')[-1])
                     media_data[key] = value
-                    print("------------------------------")
-                    print(key, value)
 
                 simple_media_copyrights.append(media_data)
 
