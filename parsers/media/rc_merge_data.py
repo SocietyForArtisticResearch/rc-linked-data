@@ -6,8 +6,11 @@ def insert_copyrights(copyrights, exposition, session, folder, download=True):
             for tool in tools_list:
                 tool_id = tool['id']
                 for media in copyrights:
-                    if media['id'] == tool_id:
+                    if isinstance(media['id'], list) and tool_id in media['id']:
+                        index = media['id'].index(tool_id) 
                         tool.update(media)
+                        tool['id'] = tool_id 
+                        tool['tool'] = media['tool'][index] 
                         if download:
                             try:
                                 path = download_media(session, tool['src'], folder, tool_id)

@@ -41,14 +41,19 @@ def extract_copyrights(url, session, output_folder):
                     data = row.find_all('td')
                     key = headers[0].get_text(strip=True).lower()
                     value = data[0].get_text(strip=True)
+                    media_data['tool'] = []
+                    media_data['id'] = []
                     if 'usages' in key:
-                        tool_link = data[0].find('a')
-                        if tool_link:
+                        tool_links = data[0].find_all('a') 
+                        print(tool_links)
+                        for tool_link in tool_links:
                             tool_url = tool_link.get('href')
                             if tool_url:
-                                media_data['tool'] = tool_url
-                                media_data['id'] = tool_url.split('#')[-1]
+                                media_data['tool'].append(tool_url)
+                                media_data['id'].append(tool_url.split('#')[-1])
                     media_data[key] = value
+                    print("------------------------------")
+                    print(key, value)
 
                 simple_media_copyrights.append(media_data)
 

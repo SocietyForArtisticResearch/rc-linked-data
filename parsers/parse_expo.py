@@ -25,9 +25,9 @@ def clean_url(url):
 def main(url, debug):
     num = rcPages.getExpositionId(url)
     research_folder = '../research/'
-    output_folder = research_folder + 'parsed'
-    media_folder = research_folder + 'media'
-    copyrights_folder = research_folder + 'copyrights'
+    output_folder = f"{research_folder}{num}/"
+    media_folder = output_folder + 'media'
+    copyrights_folder = output_folder + 'copyrights'
     os.makedirs(output_folder, exist_ok=True)
     output_file_path = os.path.join(output_folder, f'{num}.json')
     output_media_path = os.path.join(media_folder, f'{num}/')
@@ -77,7 +77,7 @@ def main(url, debug):
             if toolsDict:
                 page_dict["tools"] = toolsDict
             
-            # graphical pages have metrics
+            # graphical pages have metrics and maps
             if toolsMetrics:
                 page_dict["metrics"] = toolsMetrics
                 page_dict["map"] = map_file
