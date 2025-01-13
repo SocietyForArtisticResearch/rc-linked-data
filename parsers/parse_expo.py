@@ -27,12 +27,15 @@ def main(url, debug):
     num = rcPages.getExpositionId(url)
     research_folder = '../research/'
     output_folder = f"{research_folder}{num}/"
-    media_folder = output_folder + 'media'
+    media_folder = output_folder + 'media/'
     copyrights_folder = output_folder + 'copyrights'
+    screenshots_folder = output_folder + 'screenshots'
+    maps_folder = output_folder + 'maps'
     os.makedirs(output_folder, exist_ok=True)
     output_file_path = os.path.join(output_folder, f'{num}.json')
-    output_media_path = os.path.join(media_folder, f'{num}/')
-    os.makedirs(output_media_path, exist_ok=True)
+    os.makedirs(media_folder, exist_ok=True)
+    os.makedirs(screenshots_folder, exist_ok=True)
+    os.makedirs(maps_folder, exist_ok=True)
     exp_dict = {"id": int(num), "url": url, "pages": {}}
       
     print("Parsing exposition: " + url)
@@ -59,9 +62,9 @@ def main(url, debug):
                 case "weave-graphical":
                     toolsDict = rcParsers.parse_graphical(parsed, debug)
                     toolsMetrics = calc_metrics(**toolsDict)
-                    map_file = f"{media_folder}/maps/{pageNumber}.jpg"
+                    map_file = f"{maps_folder}/{pageNumber}.jpg"
                     generate_tools_map(map_file, 800, 600, **toolsDict)
-                    #rcScreenshot.screenshotGraphical(clean_url(page), output_media_path, pageNumber)
+                    rcScreenshot.screenshotGraphical(clean_url(page), screenshots_folder, pageNumber)
                 case "weave-block":
                     toolsDict = rcParsers.parse_block(parsed, debug)
                     toolsMetrics = None
@@ -92,7 +95,7 @@ def main(url, debug):
         print(error)
         exp_dict["pages"] = error
         
-    exp_dict["pages"] = insert_copyrights(copyrights, exp_dict["pages"], session, output_media_path)
+    exp_dict["pages"] = insert_copyrights(copyrights, exp_dict["pages"], session, media_folder)
             
     exp_json = json.dumps(exp_dict, indent=2)
     with open(output_file_path, 'w') as outfile:
