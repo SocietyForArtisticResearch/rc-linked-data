@@ -1,12 +1,12 @@
-import requests
 from bs4 import BeautifulSoup
 import json
 import os
 import sys
 from urllib.parse import urlparse, parse_qs
 
-def extract_copyrights(url):
-    response = requests.get(url)
+def extract_copyrights(url, session, output_folder):
+    print("Get copyrights: " + url)
+    response = session.get(url)
     raw_html = response.text
     
     # use html5lib parser to correct table tags in simple-media
@@ -20,7 +20,6 @@ def extract_copyrights(url):
         print("No 'exposition' parameter found in the URL.")
         return
 
-    output_folder = 'copyrights'
     os.makedirs(output_folder, exist_ok=True)
     output_file_path = os.path.join(output_folder, f'{exposition_id}.json')
 
@@ -57,6 +56,7 @@ def extract_copyrights(url):
         json.dump(simple_media_copyrights, json_file, indent=4)
 
     print(f"Data saved to {output_file_path}")
+    return simple_media_copyrights
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:

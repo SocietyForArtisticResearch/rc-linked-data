@@ -188,3 +188,80 @@ def getTools(page, which, debug):
         return []
     if debug: print("found " + str(len(tools)) + " " + which)
     return attributes
+
+def getBlockTexts(page, which, debug):
+    rows = page.find_all(class_="row")
+    all_attributes = []
+    
+    for row_index, row in enumerate(rows):
+        try:
+            texts = row.find_all(class_= which)
+            attributes = list(map(getTextAttributes, texts))
+            attributes = process_tool_cells(attributes, texts, row_index)
+            all_attributes.extend(attributes)
+
+        except Exception as e:
+            if debug: 
+                print(f"Error processing row {row_index}: {e}")
+            continue
+    
+    if debug:
+        print(f"Found {len(all_attributes)} {which}")
+    
+    return all_attributes
+
+def getBlockTools(page, which, debug):
+    rows = page.find_all(class_="row")
+    all_attributes = []
+    
+    for row_index, row in enumerate(rows):
+        try:
+            tools = row.find_all(class_=which)
+            
+            if which in ["tool-picture", "tool-pdf", "tool-slideshow"]:
+                attributes = list(map(getImageAttributes, tools))
+                attributes = process_tool_cells(attributes, tools, row_index)
+                
+            elif which in ["tool-audio"]:
+                attributes = list(map(getAudioAttributes, tools))
+                attributes = process_tool_cells(attributes, tools, row_index)
+                
+            elif which in ["tool-video"]:
+                attributes = list(map(getVideoAttributes, tools))
+                attributes = process_tool_cells(attributes, tools, row_index)
+
+            else:
+                attributes = list(map(getToolAttributes, tools))
+                attributes = process_tool_cells(attributes, tools, row_index)
+                
+            all_attributes.extend(attributes)
+
+        except Exception as e:
+            if debug: 
+                print(f"Error processing row {row_index}: {e}")
+            continue
+    
+    if debug:
+        print(f"Found {len(all_attributes)} {which}")
+    
+    return all_attributes
+
+def cellPercentage(tool):
+    parent = tool.find_parent("div")
+    cell = str(parent.get('class')[1])
+    if isinstance(cell, str) and "cell-" in cell:
+        parts = cell.split('-')
+        width = int(parts[-1]) 
+        percentage = (width / 12) * 100
+        dim = f"{percentage}%"
+    return dim
+
+def process_tool_cells(attributes, tools, row_index):
+    cells = list(map(cellPercentage, tools))
+
+    attributes = [{**attr, "dimensions": cell} for attr, cell in zip(attributes, cells)]
+
+    for attr in attributes:
+        attr["row"] = row_index
+
+    return attributes

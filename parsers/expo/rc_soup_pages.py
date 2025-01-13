@@ -51,6 +51,20 @@ def getURL(atag):
         href = RCURL + href
     return href
 
+def findMetaLink(parsed):
+    li_tag = parsed.find('li', class_='menu menu-meta')
+
+    if li_tag:
+        a_tag = li_tag.find('a')  # Find <a> tag inside the <li>
+        if a_tag:
+            href = a_tag.get('href')
+        else:
+            print("Metapage: no <a> tag found.")
+    else:
+        print("Metapage: no <li> tag with class 'menu menu-meta' found.")
+        
+    return href
+
 def findHrefsInPage(page):
     return page.find_all("a")
 

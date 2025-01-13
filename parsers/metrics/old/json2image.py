@@ -3,17 +3,6 @@ import sys
 from PIL import Image, ImageDraw
 from rc_soup_pages import getPageId
 
-def load_json(file_path):
-    try:
-        with open(file_path, "r") as f:
-            return json.load(f)
-    except Exception as e:
-        print(f"Error loading JSON file: {e}")
-        sys.exit(1)
-
-def convert_list_to_dict(data):
-    return {item["id"]: item for item in data}
-
 TOOL_COLORS = {
     "tool-text": (255, 0, 0),
     "tool-simpletext": (0, 255, 0),
@@ -26,6 +15,17 @@ TOOL_COLORS = {
     "tool-embed": (0, 128, 128),
     "tool-iframe": (128, 128, 0)
 }
+
+def load_json(file_path):
+    try:
+        with open(file_path, "r") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Error loading JSON file: {e}")
+        sys.exit(1)
+
+def convert_list_to_dict(data):
+    return {item["id"]: item for item in data}
 
 def get_default_page(data_dict, expo_id):
     exposition = data_dict.get(expo_id)
