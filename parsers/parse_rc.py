@@ -22,7 +22,7 @@ def parse_expo(url, debug, download, shot):
 
 def iterate(urls):
     for url in urls:
-        parse_expo(url, "0", "0", "0")     
+        parse_expo(url, "1", "1", "0")     
             
 if __name__ == "__main__":
     iterate(URLS)
