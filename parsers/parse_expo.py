@@ -111,8 +111,9 @@ def main(url, debug, download, shot, session):
             error = f"An error occurred: {e}. Traceback: {traceback.format_exc()}"
             print(error)
             exp_dict["pages"] = error
-            
-        exp_dict["pages"] = insert_copyrights(copyrights, exp_dict["pages"], session, media_folder, download)
+        
+        if copyrights: 
+            exp_dict["pages"] = insert_copyrights(copyrights, exp_dict["pages"], session, media_folder, download)
                 
         exp_json = json.dumps(exp_dict, indent=2)
         with open(output_file_path, 'w') as outfile:

@@ -4,26 +4,30 @@ def insert_copyrights(copyrights, exposition, session, folder, download=True):
     path_storage = {}
     
     for page_id, page_data in exposition.items():
-        for tool_category, tools_list in page_data['tools'].items(): #might remove key text and simpletext, since they are not media
-            for tool in tools_list:
-                tool_id = tool['id']
-                for media in copyrights:
-                    if isinstance(media['id'], list) and tool_id in media['id']:
-                        index = media['id'].index(tool_id) 
-                        tool.update(media)
-                        tool['id'] = tool_id 
-                        tool['tool'] = media['tool'][index] 
-                        if download:
-                            try:
-                                media_key = tuple(media['id']) 
-                                if index == 0:
-                                    path = download_media(session, tool['src'], folder, tool_id)
-                                    path_storage[media_key] = path 
-                                else:
-                                    path = path_storage.get(media_key)
-                                tool["path"] = path
-                            except Exception as e:
-                                print(f"An error occurred while downloading media: {e}")  
+        tools = page_data.get('tools')
+        if tools:
+            for tool_category, tools_list in page_data['tools'].items(): #might remove key text and simpletext, since they are not media
+                for tool in tools_list:
+                    tool_id = tool['id']
+                    for media in copyrights:
+                        if isinstance(media['id'], list) and tool_id in media['id']:
+                            index = media['id'].index(tool_id) 
+                            tool.update(media)
+                            tool['id'] = tool_id 
+                            tool['tool'] = media['tool'][index] 
+                            if download:
+                                try:
+                                    media_key = tuple(media['id']) 
+                                    if index == 0:
+                                        path = download_media(session, tool['src'], folder, tool_id)
+                                        path_storage[media_key] = path 
+                                    else:
+                                        path = path_storage.get(media_key)
+                                    tool["path"] = path
+                                except Exception as e:
+                                    print(f"An error occurred while downloading media: {e}") 
+        else:
+            print(f"No tools found for page {page_id}") 
     return exposition
 
 def download_media(session, file_url, folder, name):

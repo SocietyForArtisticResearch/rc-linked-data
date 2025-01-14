@@ -120,7 +120,10 @@ def calculate_size_uniformity_scores(rectangles):
 
 # Calculate horizontal/vertical ratio
 def calculate_horizontal_vertical_ratio(rectangles):
-    # Find the leftmost, rightmost, topmost, and bottommost rectangles
+    if not rectangles:
+        print("Warning: No rectangles found, using default values.")
+        return 1 #empty weave with no tools
+    
     leftmost_x = min(x for x, y, w, h in rectangles)
     rightmost_x = max(x + w for x, y, w, h in rectangles)
     topmost_y = min(y for x, y, w, h in rectangles)
@@ -138,6 +141,10 @@ def calculate_horizontal_vertical_ratio(rectangles):
 
 
 def calc_metrics(**tools_dict):
+    if not tools_dict:
+        print("Warning: tools_dict is empty. Empty page. Skipping metrics")
+        return None
+    
     metrics = {}
     rectangles = extract_rectangles(**tools_dict)
     
