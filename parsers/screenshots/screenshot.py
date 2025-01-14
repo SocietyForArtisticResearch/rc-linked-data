@@ -64,52 +64,52 @@ def saveScreenshotAndResize(driver, path):
     
 def screenshotGraphical(url, path, num):
     driver = webdriver.Chrome(options=options)
+    print(f"Trying screenshot of {url}")
+    driver.get(url)
+    source = driver.page_source
     try:
-        print(f"Trying screenshot of {url}")
-        driver.get(url)
         scale = smartZoom(driver)
         scal = scale["scale"]
         screen = scale["screen"]
         zoom = str(scal) + "%"
         driver.set_window_size(screen["width"], screen["height"])
-        setWindowSize = driver.get_window_size()
-        setW = setWindowSize["width"]
-        setH = setWindowSize["height"]
         driver.execute_script("document.body.style.zoom='" + zoom + "'")
         path = f"{path}/{num}.png"
-        saveScreenshotAndResize(
-            driver, path
-        )
+        saveScreenshotAndResize(driver, path)
         print(f"Saved screenshot at {path}")
     except Exception as e:
+        path = str(e)
+        zoom =  source#debug
         print(f"screenshot failed for url: {url}. Error: {e}")
         
     driver.quit()
         
     return {
-        "file": str(num) + ".png",
-        "weave_size": zoom,  # this is inconsistent, but for back compatibility
+        "file": path,
+        "weave_size": zoom
     }
     
-def screenshotBlock(driver, url, path, i):
+def screenshotBlock(url, path, num):
+    driver = webdriver.Chrome(options=options)
+    print(f"Trying screenshot of {url}")
+    driver.get(url)
+    source = driver.page_source
     try:
-        driver.get(url)
         zoom = "150%"
-        print("| zoom: " + zoom)
         driver.execute_script("document.body.style.zoom='" + zoom + "'")
+        path = f"{path}/{num}.png"
         saveScreenshotAndResize(driver, path)
-        print("| ⬇ downloading")
-        print("------------------")
+        print(f"Saved screenshot at {path}")
     except Exception as e:
-        i = 404
-        title = "failed"
-        print("| the error is", e)
-        print("| download failed")
-        print("------------------")
+        path = str(e)
+        zoom =  source#debug
+        print(f"screenshot failed for url: {url}. Error: {e}")
+        
+    driver.quit()
         
     return {
-        "file": str(i) + ".png",
-        "weave_size": zoom,  # this is inconsistent, but for back compatibility
+        "file": path,
+        "weave_size": zoom
     }
   
 """  

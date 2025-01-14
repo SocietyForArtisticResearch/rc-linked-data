@@ -64,19 +64,24 @@ def main(url, debug):
                     toolsMetrics = calc_metrics(**toolsDict)
                     map_file = f"{maps_folder}/{pageNumber}.jpg"
                     generate_tools_map(map_file, 800, 600, **toolsDict)
-                    rcScreenshot.screenshotGraphical(clean_url(page), screenshots_folder, pageNumber)
+                    screenshot = rcScreenshot.screenshotGraphical(clean_url(page), screenshots_folder, pageNumber)
                 case "weave-block":
                     toolsDict = rcParsers.parse_block(parsed, debug)
                     toolsMetrics = None
+                    screenshot = rcScreenshot.screenshotBlock(clean_url(page), screenshots_folder, pageNumber)
                 case _:
                     toolsDict = None
                     toolsMetrics = None
+                    screenshot = None
                  
             # all pages have id and type   
             page_dict = {
                 "id": pageNumber, 
                 "type": pageType
             }
+            
+            if screenshot:
+                page_dict["screenshot"] = screenshot
             
             # graphical and block pages have tools
             if toolsDict:
