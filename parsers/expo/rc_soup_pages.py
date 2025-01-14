@@ -27,7 +27,11 @@ def getPageId(fullUrl):
 
 def getPageNumber(url):
     page = url.split("/")[5].split("#")[0]
-    return int(page)
+    page_number = ''.join(filter(str.isdigit, page))
+    if not page_number:
+        raise ValueError(f"Invalid page number: {page}")
+    
+    return int(page_number)
 
 def isRelative(href):
     parts = href.split("/")
