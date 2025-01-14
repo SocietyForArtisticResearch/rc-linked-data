@@ -14,8 +14,8 @@ import sys
 import os
 from urllib.parse import urlparse, urlunparse, unquote
 
-session = rc_session()
-#session = requests.Session()
+#session = rc_session()
+session = requests.Session()
 
 def clean_url(url):
     parsed_url = urlparse(url)
@@ -24,7 +24,7 @@ def clean_url(url):
 
     return cleaned_url
 
-def main(url, debug):
+def main(url, debug, download, shot):
     num = rcPages.getExpositionId(url)
     research_folder = '../research/'
     output_folder = f"{research_folder}{num}/"
@@ -65,11 +65,17 @@ def main(url, debug):
                     toolsMetrics = calc_metrics(**toolsDict)
                     map_file = f"{maps_folder}/{pageNumber}.jpg"
                     generate_tools_map(map_file, 800, 600, **toolsDict)
-                    screenshot = rcScreenshot.screenshotGraphical(clean_url(page), screenshots_folder, pageNumber)
+                    if shot:
+                        screenshot = rcScreenshot.screenshotGraphical(clean_url(page), screenshots_folder, pageNumber)
+                    else:
+                        screenshot = None
                 case "weave-block":
                     toolsDict = rcParsers.parse_block(parsed, debug)
                     toolsMetrics = None
-                    screenshot = rcScreenshot.screenshotBlock(clean_url(page), screenshots_folder, pageNumber)
+                    if shot:
+                        screenshot = rcScreenshot.screenshotBlock(clean_url(page), screenshots_folder, pageNumber)
+                    else:
+                        screenshot = None
                 case _:
                     toolsDict = None
                     toolsMetrics = None
@@ -87,6 +93,7 @@ def main(url, debug):
             # graphical and block pages have tools
             if toolsDict:
                 page_dict["tools"] = toolsDict
+                exp_dict["copyrights"] = copyrights
             
             # graphical pages have metrics and maps
             if toolsMetrics:
@@ -94,7 +101,6 @@ def main(url, debug):
                 page_dict["map"] = map_file
                 
             exp_dict["pages"][pageNumber] = page_dict
-            exp_dict["copyrights"] = copyrights
 
     except Exception as e:
         error = f"An error occurred: {e}. Traceback: {traceback.format_exc()}"
@@ -111,8 +117,10 @@ def main(url, debug):
     return exp_dict
 
 if __name__ == "__main__":
+    #session = rc_session()
     url = str(sys.argv[1])
     debug = int(sys.argv[2])
     download = int(sys.argv[3])
-    main(url, debug)
+    shot = int(sys.argv[4])
+    main(url, debug, download, shot)
 

@@ -8,7 +8,7 @@ JSONURL = "https://map.rcdata.org/internal_research.json"
 def getInternalResearch():
     response = requests.get(JSONURL)
     data = response.json()
-    output_file = "research/internal_research.json"
+    output_file = "../research/internal_research.json"
     with open(output_file, "w") as json_file:
         json.dump(data, json_file, indent=4) 
     
