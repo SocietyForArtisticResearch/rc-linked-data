@@ -8,12 +8,13 @@ from media.rc_merge_data import insert_copyrights
 from metrics.calc_metrics import calc_metrics
 from metrics.generate_tools_map import generate_tools_map
 import traceback
+import requests
 import json
 import sys
 import os
 from urllib.parse import urlparse, urlunparse, unquote
 
-session = rc_session() #with login
+session = rc_session()
 #session = requests.Session()
 
 def clean_url(url):
@@ -100,7 +101,7 @@ def main(url, debug):
         print(error)
         exp_dict["pages"] = error
         
-    exp_dict["pages"] = insert_copyrights(copyrights, exp_dict["pages"], session, media_folder)
+    exp_dict["pages"] = insert_copyrights(copyrights, exp_dict["pages"], session, media_folder, download)
             
     exp_json = json.dumps(exp_dict, indent=2)
     with open(output_file_path, 'w') as outfile:
@@ -112,5 +113,6 @@ def main(url, debug):
 if __name__ == "__main__":
     url = str(sys.argv[1])
     debug = int(sys.argv[2])
+    download = int(sys.argv[3])
     main(url, debug)
 
