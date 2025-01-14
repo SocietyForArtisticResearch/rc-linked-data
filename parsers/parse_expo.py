@@ -26,6 +26,9 @@ def main(url, debug, download, shot, session):
     num = rcPages.getExpositionId(url)
     research_folder = '../research/'
     output_folder = f"{research_folder}{num}/"
+    if os.path.exists(output_folder):
+        print(f"Exposition already parsed at: {output_folder}. Skipping.")
+        return
     media_folder = output_folder + 'media/'
     copyrights_folder = output_folder + 'copyrights'
     screenshots_folder = output_folder + 'screenshots'

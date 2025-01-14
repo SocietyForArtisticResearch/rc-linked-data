@@ -23,10 +23,6 @@ def extract_copyrights(url, session, output_folder):
     os.makedirs(output_folder, exist_ok=True)
     output_file_path = os.path.join(output_folder, f'{exposition_id}.json')
 
-    if os.path.exists(output_file_path):
-        print(f"File {output_file_path} already exists. Skipping.")
-        return
-
     # Find the "Copyrights" section and extract the simple-media entries
     simple_media_copyrights = []
     copyright_section = soup.find('div', class_='simple-media-copyright')
