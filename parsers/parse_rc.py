@@ -1,28 +1,28 @@
-import subprocess
-import pandas as pd
 import sys
-from common.rc_internal_research import getInternalResearch
+import pandas as pd
+import requests
+import getpass
+from common import rc_internal_research as rcMisc
+from common.rc_session import rc_session
+from parse_expo import main as parse_expo
 
-getInternalResearch()
+rcMisc.getInternalResearch("../research")
 RES = pd.read_json("../research/internal_research.json")
 URLS = RES["default-page"]
 
-def parse_expo(url, debug, download, shot):
-    try:
-        result = subprocess.run(
-            [sys.executable, 'parse_expo.py', url, debug, download, shot],
-            check=True,
-            capture_output=True,
-            text=True
-        )
-        print(f"Script output:\n{result.stdout}")
-    except subprocess.CalledProcessError as e:
-        print(f"Error calling script: {e}")
-        print(f"Script error output:\n{e.stderr}")
-
-def iterate(urls):
+def parse_rc(urls, debug, donwload, shot, session):
     for url in urls:
-        parse_expo(url, "1", "1", "0")     
-            
+        parse_expo(url, debug, donwload, shot, session)
+    
 if __name__ == "__main__":
-    iterate(URLS)
+    debug = int(sys.argv[1])
+    download = int(sys.argv[2])
+    shot = int(sys.argv[3])
+    if len(sys.argv) > 4:
+        user = input("Email: ")
+        password = getpass.getpass("Password: ")
+        session = rc_session({'username': user, 'password': password})
+    else:
+        session = requests.Session()
+        print("Proceeding without authentication.")
+    parse_rc(URLS, debug, download, shot, session)

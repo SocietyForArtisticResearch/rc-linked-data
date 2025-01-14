@@ -6,8 +6,8 @@ import os
 RCURL = 'https://www.researchcatalogue.net'
 JSONURL = "https://map.rcdata.org/internal_research.json"
 
-def getInternalResearch():
-    os.makedirs("../research", exist_ok=True)
+def getInternalResearch(path="../research"):
+    os.makedirs(path, exist_ok=True)
     response = requests.get(JSONURL)
     data = response.json()
     output_file = "../research/internal_research.json"
