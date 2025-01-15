@@ -122,17 +122,49 @@ def main(url, debug, download, shot, session):
             
         return exp_dict
 
+def print_usage():
+    usage = """
+Usage: python script_name.py <url> <debug> <download> <shot> [auth]
+    
+Arguments:
+    <url>       : Default page of the exposition to process.
+    <debug>     : Debug mode (1 for enabled, 0 for disabled).
+    <download>  : Download assets (1 for enabled, 0 for disabled).
+    <shot>      : Take screenshots (1 for enabled, 0 for disabled).
+    [auth]      : Optional. If provided, prompts for authentication.
+
+Examples:
+    Without authentication:
+        python3 parse_expo.py "default-page" 1 1 0
+
+    With authentication:
+        python3 parse_expo.py "default-page" 1 1 0 auth
+"""
+    print(usage)
+
 if __name__ == "__main__":
+    if len(sys.argv) < 5:
+        print("Error: Missing required arguments.")
+        print_usage()
+        sys.exit(1)
+
     url = str(sys.argv[1])
-    debug = int(sys.argv[2])
-    download = int(sys.argv[3])
-    shot = int(sys.argv[4])
-    if len(sys.argv) > 5:
+    try:
+        debug = int(sys.argv[2])
+        download = int(sys.argv[3])
+        shot = int(sys.argv[4])
+    except ValueError:
+        print("Error: debug, download, and shot must be integers (1 or 0).")
+        print_usage()
+        sys.exit(1)
+
+    if len(sys.argv) > 5 and sys.argv[5] == "auth":
         user = input("Email: ")
         password = getpass.getpass("Password: ")
         session = rc_session({'username': user, 'password': password})
     else:
         session = requests.Session()
         print("Proceeding without authentication.")
+
     main(url, debug, download, shot, session)
 
