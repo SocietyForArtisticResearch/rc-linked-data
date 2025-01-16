@@ -16,8 +16,12 @@ def getInternalResearch():
     print("internal research saved to " + output_file)
 
 def getPageType(page):
-    html = page.find("html");
-    return html['class']
+    try:
+        html = page.find("html")
+        type = html['class']
+    except:
+        type = "undefined"
+    return type
 
 def getExpositionId(fullUrl):
     return fullUrl.split("/")[4]
