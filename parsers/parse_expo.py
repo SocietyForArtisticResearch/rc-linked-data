@@ -81,6 +81,11 @@ def main(url, debug, download, shot, session):
                             screenshot = rcScreenshot.screenshotBlock(clean_url(page), screenshots_folder, pageNumber)
                         else:
                             screenshot = None
+                    case "iframe":
+                        url = rcParsers.parse_iframe(parsed)
+                        toolsDict = None
+                        toolsMetrics = None
+                        screenshot = None
                     case _:
                         toolsDict = None
                         toolsMetrics = None
@@ -104,6 +109,10 @@ def main(url, debug, download, shot, session):
                 if toolsMetrics:
                     page_dict["metrics"] = toolsMetrics
                     page_dict["map"] = map_file
+                   
+                # iframe 
+                if url:
+                    page_dict["url"] = url
                     
                 exp_dict["pages"][pageNumber] = page_dict
 

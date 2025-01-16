@@ -172,6 +172,17 @@ def getTexts(driver, which, debug):
     if debug: print("found " + str(len(texts)) + " " + which)
     return attributes
 
+def getIframe(page):
+    iframe = page.find('iframe')
+    
+    if iframe:
+        iframe_src = iframe.get('src')
+    else:
+        iframe_src = None
+        
+    return iframe_src
+        
+
 def getTools(page, which, debug):
     try:
         tools = page.find_all(class_= which)

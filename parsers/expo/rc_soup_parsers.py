@@ -25,9 +25,9 @@ def parse_block(parsed, debug=0):
     
     return tool_entries
 
-def parse_iframe():
-    # parse weave iframe
-    return None
+def parse_iframe(parsed):
+    url = getIframe(parsed)
+    return url
 
 def parse_text():
     # parse weave text
