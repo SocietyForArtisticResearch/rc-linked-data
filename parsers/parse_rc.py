@@ -1,14 +1,10 @@
 import sys
-import pandas as pd
+import json
 import requests
 import getpass
 from common import rc_internal_research as rcMisc
 from common.rc_session import rc_session
 from parse_expo import main as parse_expo
-
-def parse_rc(urls, debug, donwload, shot, session):
-    for url in urls:
-        parse_expo(url, debug, donwload, shot, session)
     
 def print_usage():
     usage = """
@@ -51,8 +47,12 @@ if __name__ == "__main__":
     else:
         session = requests.Session()
         print("Proceeding without authentication.")
-
+    
     rcMisc.getInternalResearch("../research")
-    RES = pd.read_json("../research/internal_research.json")
-    URLS = RES["default-page"]
-    parse_rc(URLS, debug, download, shot, session)
+    
+    with open("../research/internal_research.json", "r") as file:
+        research = json.load(file)
+    for exposition in research:
+        url = exposition["default-page"]
+        meta = {key: value for key, value in exposition.items()}
+        parse_expo(url, debug, download, shot, session, **meta)

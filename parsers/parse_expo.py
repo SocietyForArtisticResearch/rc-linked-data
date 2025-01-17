@@ -22,7 +22,7 @@ def clean_url(url):
 
     return cleaned_url
 
-def main(url, debug, download, shot, session):
+def main(url, debug, download, shot, session, **meta):
     num = rcPages.getExpositionId(url)
     research_folder = '../research/'
     output_folder = f"{research_folder}{num}/"
@@ -123,6 +123,9 @@ def main(url, debug, download, shot, session):
         
         if copyrights: 
             exp_dict["pages"] = insert_copyrights(copyrights, exp_dict["pages"], session, media_folder, download)
+            
+        if meta:
+            exp_dict["meta"] = meta
                 
         exp_json = json.dumps(exp_dict, indent=2)
         with open(output_file_path, 'w') as outfile:
