@@ -44,8 +44,13 @@ def main(url, debug, download, shot, session, **meta):
     
     expo = session.get(clean_url(url))
     parsed = BeautifulSoup(expo.content, 'html.parser')
+    
     if "Authentication required" in parsed.get_text():
         print("Exposition with restricted visibility.")
+        return None
+    
+    if "You do not have permissions to access this research!" in parsed.get_text():
+        print("Exposition not accessible.")
         return None
     
     else:
