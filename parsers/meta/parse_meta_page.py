@@ -1,13 +1,12 @@
 from bs4 import BeautifulSoup
-import requests
 from datetime import datetime
 import time
 import re
 from urllib.parse import urlparse, parse_qs
 
-def parse_meta_page(url):
+def parse_meta_page(url, session):
     print("Parsing meta page: " + url)
-    meta = requests.get(url)
+    meta = session.get(url)
     meta_page = BeautifulSoup(meta.content, 'html5lib')
     
     meta_section = meta_page.find('div', class_='meta-right-col')
@@ -47,7 +46,7 @@ def parse_meta_page(url):
         temp["author"] = people[0]
         temp["coauthors"] = []
             
-    img_tag = meta_page.find('img')
+    img_tag = meta_page.find('img', class_='research-image')
     thumb = img_tag.get('src') if img_tag else None
     temp["thumb"] = thumb  
     temp["author"] = people[0]          

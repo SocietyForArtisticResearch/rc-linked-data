@@ -7,6 +7,7 @@ from common.rc_session import rc_session
 from media.rc_merge_data import insert_copyrights
 from metrics.calc_metrics import calc_metrics
 from metrics.generate_tools_map import generate_tools_map
+from meta.parse_meta_page import parse_meta_page
 import traceback
 import getpass
 import requests
@@ -55,7 +56,8 @@ def main(url, debug, download, shot, session, **meta):
     
     else:
         try:
-            copyrights = mediaParser.extract_copyrights(rcPages.findMetaLink(parsed), session, copyrights_folder)
+            meta_page_url = rcPages.findMetaLink(parsed)
+            copyrights = mediaParser.extract_copyrights(meta_page_url, session, copyrights_folder)
             pages = rcPages.getAllPages(url, parsed)
             exp_dict["pages"] = {rcPages.getPageNumber(page): {} for page in pages}
             print(f"Found {len(pages)} pages.")
@@ -131,6 +133,12 @@ def main(url, debug, download, shot, session, **meta):
             
         if meta:
             exp_dict["meta"] = meta
+        else:
+            try:
+                meta = parse_meta_page(meta_page_url, session)
+                exp_dict["meta"] = meta
+            except:
+                print("Failed to parse meta page.")
                 
         exp_json = json.dumps(exp_dict, indent=2)
         with open(output_file_path, 'w') as outfile:
