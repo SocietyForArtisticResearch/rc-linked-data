@@ -58,7 +58,7 @@ def main(url, debug, download, shot, session, **meta):
         try:
             meta_page_url = rcPages.findMetaLink(parsed)
             copyrights = mediaParser.extract_copyrights(meta_page_url, session, copyrights_folder)
-            pages = rcPages.getAllPages(url, parsed)
+            pages = rcPages.getAllPages(url, parsed, meta_page_url, session)
             exp_dict["pages"] = {rcPages.getPageNumber(page): {} for page in pages}
             print(f"Found {len(pages)} pages.")
 

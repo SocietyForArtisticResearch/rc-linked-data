@@ -76,15 +76,12 @@ def findMetaLink(parsed):
 def findHrefsInPage(page):
     return page.find_all("a")
 
-def notContainsHash(url):
+def removeHash(url):
     try:
-        page = url.split("/")[5]
-        if "#" not in page:
-            return True
-        else:
-            return False
+        no_hash = url.split('#')[0]
+        return no_hash
     except:
-        return False
+        return url
 
 def notAnchorAtOrigin(url):
     try:
@@ -113,14 +110,18 @@ def getPages(expositionUrl, page):
     urls = list(set(urls))
     subpages = list(filter(lambda url: isSubPage(expositionUrl, url), urls)) #filter to get only exposition subpages
     subpages = list(filter(notAnchorAtOrigin, subpages)) #filter out urls with anchor at 0/0
-    subpages = list(filter(notContainsHash, subpages)) #filter out urls with hash
+    subpages = list(map(removeHash, subpages)) #filter out urls with hash
     subpages.append(expositionUrl)
     subpages = list(set(subpages))
     return subpages
 
-def getAllPages(expositionUrl, page): #now we don't make a difference anymore btw TOC and subpages
+def getAllPages(expositionUrl, page, meta_page_url, session): #now we don't make a difference anymore btw TOC and subpages
     try:
         pages = getPages(expositionUrl, page)
+        meta = session.get(meta_page_url)
+        meta_soup = BeautifulSoup(meta.content, 'html.parser')
+        meta_pages = getPages(expositionUrl, meta_soup)
+        pages = list(set(pages + meta_pages))
     except:
         return [expositionUrl]
     return pages
