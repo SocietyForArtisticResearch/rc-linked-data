@@ -51,6 +51,22 @@ def getImageSrc(tool_content):
 
     return None
 
+def getSlideshowSrc(tool_content):
+    src_list = []
+    
+    img_tags = tool_content.find_all("img")
+    
+    for img in img_tags:
+        if "src" in img.attrs:
+            src_list.append(img["src"])
+
+    other_src_tags = tool_content.find_all(attrs={"src": True})
+    for tag in other_src_tags:
+        if tag["src"] not in src_list:
+            src_list.append(tag["src"])
+    
+    return src_list
+
 #this is also for audiosrc
 def getVideoSrc(tool_content):
     divs = tool_content.find_all("div")
@@ -70,6 +86,22 @@ def getImageAttributes(tool):
     tool_dimensions = getStyleAttributes(tool_style)
     tool_content = getContent(tool)
     tool_src = getImageSrc(tool_content)
+    tool_dict = {
+        "id": tool_id,
+        "style": tool_style,
+        "dimensions": tool_dimensions,
+        "content": str(tool_content),
+        "src": tool_src,
+        "tool": str(tool)
+        }
+    return tool_dict
+
+def getSlideshowAttributes(tool):
+    tool_id = getId(tool)
+    tool_style = getStyle(tool)
+    tool_dimensions = getStyleAttributes(tool_style)
+    tool_content = getContent(tool)
+    tool_src = getSlideshowSrc(tool_content)
     tool_dict = {
         "id": tool_id,
         "style": tool_style,
@@ -186,8 +218,10 @@ def getIframe(page):
 def getTools(page, which, debug):
     try:
         tools = page.find_all(class_= which)
-        if which in ["tool-picture", "tool-pdf", "tool-slideshow"]:
+        if which in ["tool-picture", "tool-pdf"]:
             attributes = list(map(getImageAttributes, tools))
+        elif which in ["tool-slideshow"]:
+            attributes = list(map(getSlideshowAttributes, tools))
         elif which in ["tool-audio"]:
             attributes = list(map(getAudioAttributes, tools))
         elif which in ["tool-video"]:
