@@ -83,11 +83,14 @@ def getVideoPoster(tool_content):
 def getPdfSrc(tool_content):
     object_tag = tool_content.find('object', attrs={'data': True})
     if object_tag:
-        data = object_tag['data']
-        return data 
-    else:
-        print("No 'data' attribute found.")
-
+        return object_tag['data']
+    
+    anchor_tag = tool_content.find('a', attrs={'href': True})
+    if anchor_tag:
+        href = anchor_tag['href']
+        return href
+    
+    print("No valid PDF source found. Proabably empty tool.")
     return None
 
 def getPdfAttributes(tool):
