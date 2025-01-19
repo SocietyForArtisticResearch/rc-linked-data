@@ -40,7 +40,7 @@ def insert_copyrights(copyrights, exposition, session, folder, download=True):
                                             tool["path"] = path
                                     except Exception as e:
                                         print(f"An error occurred while downloading slideshow media: {e}")
-                                elif tool_category in ['tool-picture', 'tool-audio', 'tool-video', 'tool-slideshow']:
+                                elif tool_category in ['tool-picture', 'tool-audio', 'tool-video', 'tool-pdf']:
                                     try:
                                         media_key = tuple(media['id']) 
                                         if index == 0:

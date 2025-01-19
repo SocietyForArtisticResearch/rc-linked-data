@@ -80,6 +80,32 @@ def getVideoPoster(tool_content):
     divs = tool_content.find_all("div")
     return divs[0]["data-image"]
 
+def getPdfSrc(tool_content):
+    object_tag = tool_content.find('object', attrs={'data': True})
+    if object_tag:
+        data = object_tag['data']
+        return data 
+    else:
+        print("No 'data' attribute found.")
+
+    return None
+
+def getPdfAttributes(tool):
+    tool_id = getId(tool)
+    tool_style = getStyle(tool)
+    tool_dimensions = getStyleAttributes(tool_style)
+    tool_content = getContent(tool)
+    tool_src = getPdfSrc(tool_content)
+    tool_dict = {
+        "id": tool_id,
+        "style": tool_style,
+        "dimensions": tool_dimensions,
+        "content": str(tool_content),
+        "src": tool_src,
+        "tool": str(tool)
+        }
+    return tool_dict
+
 def getImageAttributes(tool):
     tool_id = getId(tool)
     tool_style = getStyle(tool)
@@ -218,8 +244,10 @@ def getIframe(page):
 def getTools(page, which, debug):
     try:
         tools = page.find_all(class_= which)
-        if which in ["tool-picture", "tool-pdf"]:
+        if which in ["tool-picture"]:
             attributes = list(map(getImageAttributes, tools))
+        elif which in ["tool-pdf"]:
+            attributes = list(map(getPdfAttributes, tools))
         elif which in ["tool-slideshow"]:
             attributes = list(map(getSlideshowAttributes, tools))
         elif which in ["tool-audio"]:
@@ -263,18 +291,21 @@ def getBlockTools(page, which, debug):
         try:
             tools = row.find_all(class_=which)
             
-            if which in ["tool-picture", "tool-pdf", "tool-slideshow"]:
+            if which in ["tool-picture", "tool-slideshow"]:
                 attributes = list(map(getImageAttributes, tools))
                 attributes = process_tool_cells(attributes, tools, row_index)
-                
+            elif which in ["tool-slideshow"]:
+                attributes = list(map(getSlideshowAttributes, tools))
+                attributes = process_tool_cells(attributes, tools, row_index) 
+            elif which in ["tool-pdf"]:
+                attributes = list(map(getPdfAttributes, tools))
+                attributes = process_tool_cells(attributes, tools, row_index)  
             elif which in ["tool-audio"]:
                 attributes = list(map(getAudioAttributes, tools))
                 attributes = process_tool_cells(attributes, tools, row_index)
-                
             elif which in ["tool-video"]:
                 attributes = list(map(getVideoAttributes, tools))
                 attributes = process_tool_cells(attributes, tools, row_index)
-
             else:
                 attributes = list(map(getToolAttributes, tools))
                 attributes = process_tool_cells(attributes, tools, row_index)
