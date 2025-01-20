@@ -21,13 +21,13 @@ Arguments:
 
 Examples:
     Without authentication:
-        python script_name.py 1 1 0 0 
+        python parse_rc.py 1 1 0 0 
 
     With authentication:
-        python script_name.py 1 1 0 0 auth
+        python parse_rc.py 1 1 0 0 auth
  
     With lookup:
-       python script_name.py 1 1 0 0 auth lookup
+       python parse_rc.py 1 1 0 0 auth lookup
 """
     print(usage)
 
