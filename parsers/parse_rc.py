@@ -9,13 +9,13 @@ from parse_expo import main as parse_expo
     
 def print_usage():
     usage = """
-Usage: python script_name.py <debug> <download> <shot> [auth]
+Usage: python3 parse_rc.py <debug> <download> <shot> <force> [auth] [lookup]
     
 Arguments:
     <debug>     : Debug mode (1 for enabled, 0 for disabled).
     <download>  : Download assets (1 for enabled, 0 for disabled).
     <shot>      : Take screenshots (1 for enabled, 0 for disabled).
-    <force>     : Always parse an exposition, even when it has been parsed before.
+    <force>     : Always parse an exposition, even when it has been parsed before (1 for enabled, 0 for disabled).
     [auth]      : Optional. If provided, prompts for authentication (email and password).
     [lookup]    : Provide a url, will look for any exposition links in the content of the page and download only those
 
