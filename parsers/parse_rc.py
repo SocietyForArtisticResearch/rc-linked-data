@@ -55,6 +55,20 @@ if __name__ == "__main__":
         session = requests.Session()
         print("Proceeding without authentication.")
         
+    rc_dict_path = "../research/rc_dict.json"
+    
+    try:
+        with open(rc_dict_path, "r") as file:
+            rc_dict = json.load(file) 
+            print("RC dict laoded.")
+    except FileNotFoundError:
+        rc_dict = {}
+        print(f"File '{rc_dict_path}' not found. New dict created.")
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        
     if len(sys.argv) > 6:
         page_url = sys.argv[6]
         print(f"Looking for research in: {page_url}")
@@ -64,7 +78,12 @@ if __name__ == "__main__":
         research = [button['href'] for button in buttons]
         print(f"Found {len(research)} expositions")
         for url in research:
-            parse_expo(url, debug, download, shot, force, session)
+            expo = parse_expo(url, debug, download, shot, force, session)
+            if expo:
+                rc_dict[expo["id"]] = expo
+                rc_json = json.dumps(rc_dict, indent=2)
+                with open("../research/rc_dict.json", 'w') as outfile:
+                    outfile.write(rc_json)
     else:
         rcMisc.getInternalResearch("../research")
         print(f"Using internal research")
@@ -73,4 +92,9 @@ if __name__ == "__main__":
         for exposition in research:
             url = exposition["default-page"]
             meta = {key: value for key, value in exposition.items()}
-            parse_expo(url, debug, download, shot, force, session, **meta)
+            expo = parse_expo(url, debug, download, shot, force, session, **meta)
+            if expo:
+                rc_dict[expo["id"]] = expo
+                rc_json = json.dumps(rc_dict, indent=2)
+                with open("../research/rc_dict.json", 'w') as outfile:
+                    outfile.write(rc_json)

@@ -34,7 +34,7 @@ def main(url, debug, download, shot, force, session, **meta):
             shutil.rmtree(output_folder)
             print(f"Folder '{output_folder}' has been deleted.")
         except FileNotFoundError:
-            print(f"Folder '{output_folder}' not found.")
+            print(f"Folder '{output_folder}' not found. Creating now.")
         except PermissionError:
             print(f"Permission denied: Unable to delete '{output_folder}'.")
         except Exception as e:
