@@ -77,7 +77,8 @@ if __name__ == "__main__":
         buttons = soup.find_all('a', class_='button consult-research')
         research = [button['href'] for button in buttons]
         print(f"Found {len(research)} expositions")
-        for url in research:
+        for index, url in enumerate(research):
+            print(f"Processing exposition {index + 1}/{len(research)}")
             expo = parse_expo(url, debug, download, shot, force, session)
             if expo:
                 rc_dict[expo["id"]] = expo
@@ -89,7 +90,8 @@ if __name__ == "__main__":
         print(f"Using internal research")
         with open("../research/internal_research.json", "r") as file:
             research = json.load(file)
-        for exposition in research:
+        for index, exposition in enumerate(research):
+            print(f"Processing exposition {index + 1}/{len(research)}")
             url = exposition["default-page"]
             meta = {key: value for key, value in exposition.items()}
             expo = parse_expo(url, debug, download, shot, force, session, **meta)
