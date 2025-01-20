@@ -1,3 +1,4 @@
+from bs4 import BeautifulSoup
 import sys
 import json
 import requests
@@ -47,12 +48,23 @@ if __name__ == "__main__":
     else:
         session = requests.Session()
         print("Proceeding without authentication.")
-    
-    rcMisc.getInternalResearch("../research")
-    
-    with open("../research/internal_research.json", "r") as file:
-        research = json.load(file)
-    for exposition in research:
-        url = exposition["default-page"]
-        meta = {key: value for key, value in exposition.items()}
-        parse_expo(url, debug, download, shot, session, **meta)
+        
+    if len(sys.argv) > 5:
+        page_url = sys.argv[5]
+        print(f"Looking for research in: {page_url}")
+        page = session.get(page_url)
+        soup = BeautifulSoup(page.content, 'html.parser')
+        buttons = soup.find_all('a', class_='button consult-research')
+        research = [button['href'] for button in buttons]
+        print(f"Found {len(research)} expositions")
+        for url in research:
+            parse_expo(url, debug, download, shot, session)
+    else:
+        rcMisc.getInternalResearch("../research")
+        print(f"Using internal research")
+        with open("../research/internal_research.json", "r") as file:
+            research = json.load(file)
+        for exposition in research:
+            url = exposition["default-page"]
+            meta = {key: value for key, value in exposition.items()}
+            parse_expo(url, debug, download, shot, session, **meta)
