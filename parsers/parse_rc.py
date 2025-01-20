@@ -15,14 +15,19 @@ Arguments:
     <debug>     : Debug mode (1 for enabled, 0 for disabled).
     <download>  : Download assets (1 for enabled, 0 for disabled).
     <shot>      : Take screenshots (1 for enabled, 0 for disabled).
+    <force>     : Always parse an exposition, even when it has been parsed before.
     [auth]      : Optional. If provided, prompts for authentication (email and password).
+    [lookup]    : Provide a url, will look for any exposition links in the content of the page and download only those
 
 Examples:
     Without authentication:
-        python script_name.py 1 1 0
+        python script_name.py 1 1 0 0 
 
     With authentication:
-        python script_name.py 1 1 0 auth
+        python script_name.py 1 1 0 0 auth
+ 
+    With lookup:
+       python script_name.py 1 1 0 0 auth lookup
 """
     print(usage)
 
