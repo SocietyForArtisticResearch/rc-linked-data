@@ -36,12 +36,13 @@ if __name__ == "__main__":
         debug = int(sys.argv[1])
         download = int(sys.argv[2])
         shot = int(sys.argv[3])
+        force = int(sys.argv[4])
     except ValueError:
         print("Error: debug, download, and shot must be integers (1 or 0).")
         print_usage()
         sys.exit(1)
 
-    if len(sys.argv) > 4 and sys.argv[4] == "auth":
+    if len(sys.argv) > 5 and sys.argv[5] == "auth":
         user = input("Email: ")
         password = getpass.getpass("Password: ")
         session = rc_session({'username': user, 'password': password})
@@ -49,8 +50,8 @@ if __name__ == "__main__":
         session = requests.Session()
         print("Proceeding without authentication.")
         
-    if len(sys.argv) > 5:
-        page_url = sys.argv[5]
+    if len(sys.argv) > 6:
+        page_url = sys.argv[6]
         print(f"Looking for research in: {page_url}")
         page = session.get(page_url)
         soup = BeautifulSoup(page.content, 'html.parser')
@@ -58,7 +59,7 @@ if __name__ == "__main__":
         research = [button['href'] for button in buttons]
         print(f"Found {len(research)} expositions")
         for url in research:
-            parse_expo(url, debug, download, shot, session)
+            parse_expo(url, debug, download, shot, force, session)
     else:
         rcMisc.getInternalResearch("../research")
         print(f"Using internal research")
@@ -67,4 +68,4 @@ if __name__ == "__main__":
         for exposition in research:
             url = exposition["default-page"]
             meta = {key: value for key, value in exposition.items()}
-            parse_expo(url, debug, download, shot, session, **meta)
+            parse_expo(url, debug, download, shot, force, session, **meta)

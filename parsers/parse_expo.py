@@ -14,6 +14,7 @@ import requests
 import json
 import sys
 import os
+import shutil
 from urllib.parse import urlparse, urlunparse, unquote
 
 def clean_url(url):
@@ -23,10 +24,21 @@ def clean_url(url):
 
     return cleaned_url
 
-def main(url, debug, download, shot, session, **meta):
+def main(url, debug, download, shot, force, session, **meta):
     num = rcPages.getExpositionId(url)
     research_folder = '../research/'
     output_folder = f"{research_folder}{num}/"
+    if force:
+        print(f"Force flag enabled. Processing exposition at: {output_folder}")
+        try:
+            shutil.rmtree(output_folder)
+            print(f"Folder '{output_folder}' has been deleted.")
+        except FileNotFoundError:
+            print(f"Folder '{output_folder}' not found.")
+        except PermissionError:
+            print(f"Permission denied: Unable to delete '{output_folder}'.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
     if os.path.exists(output_folder):
         print(f"Exposition already parsed at: {output_folder}. Skipping.")
         return
