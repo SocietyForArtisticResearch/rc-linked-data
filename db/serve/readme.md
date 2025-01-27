@@ -9,3 +9,9 @@ http://127.0.0.1:5000/query?overall-score=0.8
 - data
 - metrics
 - abstract
+
+## queries
+- editor type. Default page
+- editor type as list
+- statistics
+- number of tools. filter for exposition with > n tools
