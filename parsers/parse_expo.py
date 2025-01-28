@@ -42,11 +42,14 @@ def main(url, debug, download, shot, maps, force, session, **meta):
     if os.path.exists(output_folder):
         print(f"Exposition already parsed at: {output_folder}. Skipping.")
         return
-    media_folder = output_folder + 'media/'
     #copyrights_folder = output_folder + 'copyrights'
     os.makedirs(output_folder, exist_ok=True)
     output_file_path = os.path.join(output_folder, f'{num}.json')
-    os.makedirs(media_folder, exist_ok=True)
+    if download:
+        media_folder = output_folder + 'media/'
+        os.makedirs(media_folder, exist_ok=True)
+    else:
+        media_folder = None
     if shot:
         screenshots_folder = output_folder + 'screenshots'
         os.makedirs(screenshots_folder, exist_ok=True)
