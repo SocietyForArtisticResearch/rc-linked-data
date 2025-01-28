@@ -24,7 +24,7 @@ def clean_url(url):
 
     return cleaned_url
 
-def main(url, debug, download, shot, force, session, **meta):
+def main(url, debug, download, shot, maps, force, session, **meta):
     num = rcPages.getExpositionId(url)
     research_folder = '../research/'
     output_folder = f"{research_folder}{num}/"
@@ -44,13 +44,15 @@ def main(url, debug, download, shot, force, session, **meta):
         return
     media_folder = output_folder + 'media/'
     #copyrights_folder = output_folder + 'copyrights'
-    screenshots_folder = output_folder + 'screenshots'
-    maps_folder = output_folder + 'maps'
     os.makedirs(output_folder, exist_ok=True)
     output_file_path = os.path.join(output_folder, f'{num}.json')
     os.makedirs(media_folder, exist_ok=True)
-    os.makedirs(screenshots_folder, exist_ok=True)
-    os.makedirs(maps_folder, exist_ok=True)
+    if shot:
+        screenshots_folder = output_folder + 'screenshots'
+        os.makedirs(screenshots_folder, exist_ok=True)
+    if maps:
+        maps_folder = output_folder + 'maps'
+        os.makedirs(maps_folder, exist_ok=True)
     exp_dict = {"id": int(num), "url": url, "pages": {}}
       
     print("Parsing exposition: " + url)
@@ -87,8 +89,9 @@ def main(url, debug, download, shot, force, session, **meta):
                     case "weave-graphical":
                         toolsDict = rcParsers.parse_graphical(parsed, debug)
                         toolsMetrics = calc_metrics(**toolsDict)
-                        map_file = f"{maps_folder}/{pageNumber}.jpg"
-                        generate_tools_map(map_file, 800, 600, **toolsDict)
+                        if maps:
+                            map_file = f"{maps_folder}/{pageNumber}.jpg"
+                            generate_tools_map(map_file, 800, 600, **toolsDict)
                         if shot:
                             screenshot = rcScreenshot.screenshotGraphical(clean_url(page), screenshots_folder, pageNumber)
                         else:
@@ -127,6 +130,8 @@ def main(url, debug, download, shot, force, session, **meta):
                 # graphical pages have metrics and maps
                 if toolsMetrics:
                     page_dict["metrics"] = toolsMetrics
+                
+                if maps:
                     page_dict["map"] = map_file
                    
                 # iframe 
@@ -161,13 +166,14 @@ def main(url, debug, download, shot, force, session, **meta):
 
 def print_usage():
     usage = """
-Usage: python3 parse_expo.py <url> <debug> <download> <shot> [auth]
+Usage: python3 parse_expo.py <url> <debug> <download> <shot> <maps> <force> [auth]
     
 Arguments:
     <url>       : Default page of the exposition to process.
     <debug>     : Debug mode (1 for enabled, 0 for disabled).
     <download>  : Download assets (1 for enabled, 0 for disabled).
     <shot>      : Take screenshots (1 for enabled, 0 for disabled).
+    <maps>      : Generate visual maps (1 for enabled, 0 for disabled).
     <force>     : Always parse an exposition, even when it has been parsed before (1 for enabled, 0 for disabled).
     [auth]      : Optional. If provided, prompts for authentication.
 
@@ -191,13 +197,14 @@ if __name__ == "__main__":
         debug = int(sys.argv[2])
         download = int(sys.argv[3])
         shot = int(sys.argv[4])
-        force = int(sys.argv[5])
+        maps = int(sys.argv[5])
+        force = int(sys.argv[6])
     except ValueError:
         print("Error: debug, download, and shot must be integers (1 or 0).")
         print_usage()
         sys.exit(1)
 
-    if len(sys.argv) > 6 and sys.argv[6] == "auth":
+    if len(sys.argv) > 7 and sys.argv[7] == "auth":
         user = input("Email: ")
         password = getpass.getpass("Password: ")
         session = rc_session({'username': user, 'password': password})
@@ -205,5 +212,5 @@ if __name__ == "__main__":
         session = requests.Session()
         print("Proceeding without authentication.")
 
-    main(url, debug, download, shot, force, session)
+    main(url, debug, download, shot, maps, force, session)
 
