@@ -4,7 +4,7 @@ import os
 import sys
 from urllib.parse import urlparse, parse_qs
 
-def extract_copyrights(url, session, output_folder):
+def extract_copyrights(url, session):
     print("Get copyrights: " + url)
     response = session.get(url)
     raw_html = response.text
@@ -20,8 +20,8 @@ def extract_copyrights(url, session, output_folder):
         print("No 'exposition' parameter found in the URL.")
         return
 
-    os.makedirs(output_folder, exist_ok=True)
-    output_file_path = os.path.join(output_folder, f'{exposition_id}.json')
+    #os.makedirs(output_folder, exist_ok=True)
+    #output_file_path = os.path.join(output_folder, f'{exposition_id}.json')
 
     # Find the "Copyrights" section and extract the simple-media entries
     simple_media_copyrights = []
@@ -50,10 +50,10 @@ def extract_copyrights(url, session, output_folder):
 
                 simple_media_copyrights.append(media_data)
 
-    with open(output_file_path, 'w') as json_file:
-        json.dump(simple_media_copyrights, json_file, indent=4)
+    #with open(output_file_path, 'w') as json_file:
+    #    json.dump(simple_media_copyrights, json_file, indent=4)
 
-    print(f"Data saved to {output_file_path}")
+    #print(f"Data saved to {output_file_path}")
     return simple_media_copyrights
 
 if __name__ == "__main__":

@@ -43,7 +43,7 @@ def main(url, debug, download, shot, force, session, **meta):
         print(f"Exposition already parsed at: {output_folder}. Skipping.")
         return
     media_folder = output_folder + 'media/'
-    copyrights_folder = output_folder + 'copyrights'
+    #copyrights_folder = output_folder + 'copyrights'
     screenshots_folder = output_folder + 'screenshots'
     maps_folder = output_folder + 'maps'
     os.makedirs(output_folder, exist_ok=True)
@@ -69,7 +69,7 @@ def main(url, debug, download, shot, force, session, **meta):
     else:
         try:
             meta_page_url = rcPages.findMetaLink(parsed)
-            copyrights = mediaParser.extract_copyrights(meta_page_url, session, copyrights_folder)
+            copyrights = mediaParser.extract_copyrights(meta_page_url, session)
             pages = rcPages.getAllPages(url, parsed, meta_page_url, session)
             exp_dict["pages"] = {rcPages.getPageNumber(page): {} for page in pages}
             print(f"Found {len(pages)} pages.")
