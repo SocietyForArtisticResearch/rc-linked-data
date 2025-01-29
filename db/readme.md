@@ -28,7 +28,7 @@ db.[collection name].find()
 Queries just return exposition numbers in certain order.
 
 - queries by editor type in default page
-- queries by editor type 
+- queries by editor type in any page of the exposition. So: give me all expositinos that have a block page (somewhere).
 - filter and sort by tool type
 
 - tool type (holistically), so sorting by multiple tool types at once
