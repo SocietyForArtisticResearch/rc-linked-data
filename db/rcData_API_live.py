@@ -41,29 +41,55 @@ def get_exposition(exposition_id):
 #http://127.0.0.1:5000/rc/by-default-page-type?type=weave-block
 @app.route('/rc/by-default-page-type', methods=['GET'])
 def filter_by_default_page_type():
-    format_type = request.args.get('format', 'full') 
-    page_type = request.args.get('type') 
+    format_type = request.args.get('format', 'full')
+    page_type = request.args.get('type')
 
     if not page_type:
         return jsonify({"error": "Missing 'type' query parameter"}), 400
 
-    matching_records = []
+    pipeline = [
+        # Step 1: Extract the default_page_id using regex
+        {
+            "$addFields": {
+                "default_page_id": {
+                    "$regexFind": {
+                        "input": "$default-page",
+                        "regex": r"/view/\d+/(\d+)"
+                    }
+                }
+            }
+        },
+        # Step 2: Ensure the extracted ID is a number (convert from string)
+        {
+            "$set": {
+                "default_page_id": {
+                    "$toInt": "$default_page_id.match"
+                }
+            }
+        },
+        # Step 3: Match documents where at least one page has the correct id & type
+        {
+            "$match": {
+                "pages": {
+                    "$elemMatch": {
+                        "id": {"$exists": True, "$eq": "$default_page_id"},
+                        "type": page_type
+                    }
+                }
+            }
+        },
+        # Step 4: Only return the required fields
+        {
+            "$project": {
+                "_id": 0,
+                "default-page": 1,
+                "pages": 1
+            }
+        }
+    ]
 
-    # Fetch only necessary fields: "default-page" and "pages"
-    for record in collection.find({}, {"_id": 0, "default-page": 1, "pages": 1}):  
-        # Extract default page ID from "default-page" URL
-        match = re.search(r"/view/\d+/(\d+)", record.get("default-page", ""))
-        
-        if match:
-            default_page_id = match.group(1)  # Extract page ID as string
-
-            # Check if any page in "pages" has the matching "id"
-            if "pages" in record:
-                for page_key, page in record["pages"].items():
-                    if page.get("id") == int(default_page_id):  # Compare page 'id' with the extracted default_page_id
-                        # If the type matches, add the record to the results
-                        if page.get("type") == page_type:
-                            matching_records.append(record)
+    # Execute aggregation
+    matching_records = list(collection.aggregate(pipeline))
 
     formatted_result = format_records(matching_records, format_type)
     return jsonify(formatted_result)
