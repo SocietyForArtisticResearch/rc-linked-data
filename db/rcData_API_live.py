@@ -49,18 +49,21 @@ def filter_by_default_page_type():
 
     matching_records = []
 
-    # Fetch all records
-    for record in collection.find({}, {"_id": 0}):  
+    # Fetch only necessary fields: "default-page" and "pages"
+    for record in collection.find({}, {"_id": 0, "default-page": 1, "pages": 1}):  
         # Extract default page ID from "default-page" URL
         match = re.search(r"/view/\d+/(\d+)", record.get("default-page", ""))
         
         if match:
             default_page_id = match.group(1)  # Extract page ID as string
 
-            # check if page ID exists in "pages" and matches the requested type
-            if "pages" in record and default_page_id in record["pages"]:
-                if record["pages"][default_page_id]["type"] == page_type:
-                    matching_records.append(record)
+            # Check if any page in "pages" has the matching "id"
+            if "pages" in record:
+                for page_key, page in record["pages"].items():
+                    if page.get("id") == int(default_page_id):  # Compare page 'id' with the extracted default_page_id
+                        # If the type matches, add the record to the results
+                        if page.get("type") == page_type:
+                            matching_records.append(record)
 
     formatted_result = format_records(matching_records, format_type)
     return jsonify(formatted_result)
