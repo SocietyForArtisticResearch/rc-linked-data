@@ -48,7 +48,7 @@ def filter_by_default_page_type():
         return jsonify({"error": "Missing 'type' query parameter"}), 400
 
     pipeline = [
-        # Step 1: Extract the default_page_id using regex
+        # Step 1: Extract default_page_id using regex
         {
             "$addFields": {
                 "default_page_id": {
@@ -59,7 +59,7 @@ def filter_by_default_page_type():
                 }
             }
         },
-        # Step 2: Ensure the extracted ID is a number (convert from string)
+        # Step 2: Convert extracted page ID from string to integer
         {
             "$set": {
                 "default_page_id": {
@@ -67,18 +67,26 @@ def filter_by_default_page_type():
                 }
             }
         },
-        # Step 3: Match documents where at least one page has the correct id & type
+        # Step 3: Convert "pages" dictionary into an array for filtering
+        {
+            "$set": {
+                "pages_array": {
+                    "$objectToArray": "$pages"
+                }
+            }
+        },
+        # Step 4: Filter only documents where at least one page has a matching "id" & "type"
         {
             "$match": {
-                "pages": {
+                "pages_array": {
                     "$elemMatch": {
-                        "id": {"$exists": True, "$eq": "$default_page_id"},
-                        "type": page_type
+                        "v.id": {"$exists": True, "$eq": "$default_page_id"},
+                        "v.type": page_type
                     }
                 }
             }
         },
-        # Step 4: Only return the required fields
+        # Step 5: Only return required fields
         {
             "$project": {
                 "_id": 0,
