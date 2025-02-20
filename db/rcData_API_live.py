@@ -48,6 +48,38 @@ def filter_by_default_page_type():
         return jsonify({"error": "Missing 'type' query parameter"}), 400
 
     pipeline = [
+        {
+            "$addFields": {
+                "default_page_id": {
+                    "$regexFind": {
+                        "input": "$default-page",
+                        "regex": "/view/\\d+/(\\d+)"
+                    }
+                }
+            }
+        },
+        {
+            "$set": {
+                "default_page_id": {
+                    "$toInt": "$default_page_id.match"
+                }
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "default-page": 1,
+                "default_page_id": 1,  # Debug output
+                "pages": 1
+            }
+        }
+    ]
+    
+    result = list(collection.aggregate(pipeline))
+    print(result)
+    
+    '''
+    pipeline = [
         # Step 1: Extract default_page_id using regex
         {
             "$addFields": {
@@ -95,11 +127,12 @@ def filter_by_default_page_type():
             }
         }
     ]
-
+    
     # Execute aggregation
     matching_records = list(collection.aggregate(pipeline))
 
     formatted_result = format_records(matching_records, format_type)
+    '''
     return jsonify(formatted_result)
 
 #http://127.0.0.1:5000/rc/by-page-type?type=weave-block
