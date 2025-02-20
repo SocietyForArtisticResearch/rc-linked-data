@@ -54,7 +54,7 @@ def filter_by_default_page_type():
                 "default_page_id": {
                     "$regexFind": {
                         "input": "$default-page",
-                        "regex": r"/view/\d+/(\d+)"
+                        "regex": r"/view/\\d+/(\\d+)"
                     }
                 }
             }
