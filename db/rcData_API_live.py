@@ -132,8 +132,9 @@ def filter_by_default_page_type():
     matching_records = list(collection.aggregate(pipeline))
 
     formatted_result = format_records(matching_records, format_type)
-    '''
+    
     return jsonify(formatted_result)
+    '''
 
 #http://127.0.0.1:5000/rc/by-page-type?type=weave-block
 @app.route('/rc/by-page-type', methods=['GET'])
