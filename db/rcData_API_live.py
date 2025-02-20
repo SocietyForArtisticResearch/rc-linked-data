@@ -41,100 +41,46 @@ def get_exposition(exposition_id):
 #http://127.0.0.1:5000/rc/by-default-page-type?type=weave-block
 @app.route('/rc/by-default-page-type', methods=['GET'])
 def filter_by_default_page_type():
-    format_type = request.args.get('format', 'full')
-    page_type = request.args.get('type')
+    format_type = request.args.get('format', 'full') 
+    page_type = request.args.get('type') 
+    page = int(request.args.get('page', 1))
+    page_size = int(request.args.get('page_size', 256))
 
     if not page_type:
         return jsonify({"error": "Missing 'type' query parameter"}), 400
 
-    pipeline = [
-        {
-            "$addFields": {
-                "default_page_id": {
-                    "$regexFind": {
-                        "input": "$default-page",
-                        "regex": r"/view/\\d+/(\\d+)"
-                    }
-                }
-            }
-        },
-        {
-            "$set": {
-                "default_page_id": {
-                    "$toInt": "$default_page_id.match"
-                }
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,
-                "default-page": 1,
-                "default_page_id": 1,  # Debug output
-                "pages": 1
-            }
-        }
-    ]
+    matching_records = []
+
+    # Pagination logic
+    skip_count = (page - 1) * page_size
     
-    result = list(collection.aggregate(pipeline))
-    print(result)
-    
-    '''
-    pipeline = [
-        # Step 1: Extract default_page_id using regex
-        {
-            "$addFields": {
-                "default_page_id": {
-                    "$regexFind": {
-                        "input": "$default-page",
-                        "regex": r"/view/\\d+/(\\d+)"
-                    }
-                }
-            }
-        },
-        # Step 2: Convert extracted page ID from string to integer
-        {
-            "$set": {
-                "default_page_id": {
-                    "$toInt": "$default_page_id.match"
-                }
-            }
-        },
-        # Step 3: Convert "pages" dictionary into an array for filtering
-        {
-            "$set": {
-                "pages_array": {
-                    "$objectToArray": "$pages"
-                }
-            }
-        },
-        # Step 4: Filter only documents where at least one page has a matching "id" & "type"
-        {
-            "$match": {
-                "pages_array": {
-                    "$elemMatch": {
-                        "v.id": {"$exists": True, "$eq": "$default_page_id"},
-                        "v.type": page_type
-                    }
-                }
-            }
-        },
-        # Step 5: Only return required fields
-        {
-            "$project": {
-                "_id": 0,
-                "default-page": 1,
-                "pages": 1
-            }
-        }
-    ]
-    
-    # Execute aggregation
-    matching_records = list(collection.aggregate(pipeline))
+    cursor = collection.find({}, {"_id": 0}).skip(skip_count).limit(page_size)
+
+    for record in cursor:
+        match = re.search(r"/view/\d+/(\d+)", record.get("default-page", ""))
+        
+        if match:
+            default_page_id = match.group(1)  # Extract page ID as string
+
+            # Check if page ID exists in "pages" and matches the requested type
+            if "pages" in record:
+                for page_key, page_data in record["pages"].items():
+                    if page_data.get("id") == int(default_page_id) and page_data.get("type") == page_type:
+                        matching_records.append(record)
+                        break  # Stop checking further pages in the same record
 
     formatted_result = format_records(matching_records, format_type)
-    
-    return jsonify(formatted_result)
-    '''
+
+    # Add pagination metadata
+    response = {
+        "page": page,
+        "page_size": page_size,
+        "total_results": collection.count_documents({}), 
+        "data": formatted_result
+    }
+
+    return jsonify(response)
+
 
 #http://127.0.0.1:5000/rc/by-page-type?type=weave-block
 @app.route('/rc/by-page-type', methods=['GET'])
