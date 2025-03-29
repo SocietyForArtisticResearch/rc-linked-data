@@ -8,7 +8,7 @@ output_file = "../research/merged_stats.json"
 
 merged_data = {}
 
-id_pattern = re.compile(r"/(\d+)$")
+#id_pattern = re.compile(r"/(\d+)$")
 
 for folder_name in os.listdir(main_directory):
     folder_path = os.path.join(main_directory, folder_name)
@@ -37,9 +37,9 @@ for folder_name in os.listdir(main_directory):
 
                     result_entry["default-page"] = default_page_url
 
-                    match = id_pattern.search(default_page_url)
+                    match = default_page_url.rstrip("/").split("/")[5]
                     if match:
-                        default_page_id = match.group(1)  # Extracted ID as string
+                        default_page_id = match#.group(1)  # Extracted ID as string
 
                         # Find the type of the default page in the pages dictionary
                         if default_page_id in pages:
