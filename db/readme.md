@@ -1,4 +1,10 @@
 mongod --config mongod.conf
+sudo service	 mongod start
+
+I found out that service wouldn't start until I fixed the permission:
+sudo chown mongodb:mongodb /tmp/mongodb-27017.sock
+
+
 python3 rcData_API.py 
 
 http://127.0.0.1:5000/query
