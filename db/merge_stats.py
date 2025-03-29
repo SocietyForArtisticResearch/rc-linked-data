@@ -32,8 +32,8 @@ for folder_name in os.listdir(main_directory):
                         "total-number-of-tools": 0
                     }
 
-                    meta = data.get("meta", {})
-                    default_page_url = meta.get("default-page", "")
+                    #meta = data.get("meta", {})
+                    default_page_url = data.get("url", "")
 
                     result_entry["default-page"] = default_page_url
 
