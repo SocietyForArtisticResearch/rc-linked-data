@@ -32,7 +32,7 @@ def get_top_graphical_entries(metric_key, n):
 
     sorted_entries = sorted(
         filtered_entries.items(),
-        key=lambda x: x[1]["metrics"].get(metric_key, float("-inf")),
+        key=lambda x: x[1].get("metrics", {}).get(metric_key, float("-inf")),
         reverse=True
     )
 
@@ -128,7 +128,7 @@ def filter_by_page_type():
 
     filtered_entries = {k: v for k, v in data.items() if v.get("default-page-type") == page_type}
 
-    return jsonify([{"id": entry[0], **entry[1]} for entry in filtered_entries.values()])
+    return jsonify([{"id": k, **v} for k, v in filtered_entries.items()])
 
 
 if __name__ == "__main__":
@@ -138,6 +138,6 @@ if __name__ == "__main__":
 #examples
 # GET /sort-by-tool?tool=tool-video
 # GET /sort-by-tool?tool=tool-text&n=20&page_type=weave-graphical
-# GET /sort-by-graphical-metric?metric=spacing_score
+# GET /sort-by-metric?metric=spacing_score
 # GET /highest-total-tools?n=100
 # GET /filter-by-page-type?page_type=weave-graphical
