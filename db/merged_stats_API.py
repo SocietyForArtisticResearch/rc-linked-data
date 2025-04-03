@@ -126,6 +126,9 @@ def filter_by_page_type():
     if not page_type:
         return jsonify({"error": "Missing 'page_type' parameter"}), 400
 
+    print(type(data))
+    print(list(data.items())[:5])
+
     filtered_entries = {k: v for k, v in data.items() if v.get("default-page-type") == page_type}
 
     return jsonify([{"id": k, **v} for k, v in filtered_entries.items()])
