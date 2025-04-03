@@ -34,6 +34,12 @@ def get_top_graphical_entries(metric_key, n):
         if "metrics" not in v:
             print(f"Warning: Entry {k} is missing 'metrics'")
 
+    # filter out entries where the metric is 0.0 or 1.0
+    filtered_entries = {
+        k: v for k, v in filtered_entries.items() if v.get("metrics", {}).get(metric_key) not in {0.0, 1.0}
+    }
+
+    # sort the remaining entries based on the metric
     sorted_entries = sorted(
         filtered_entries.items(),
         key=lambda x: (x[1].get("metrics", {}).get(metric_key, float("-inf")) if "metrics" in x[1] else float("-inf")),
