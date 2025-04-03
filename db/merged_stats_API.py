@@ -36,7 +36,7 @@ def get_top_graphical_entries(metric_key, n):
 
     sorted_entries = sorted(
         filtered_entries.items(),
-        key=lambda x: x[1].get("metrics", {}).get(metric_key, float("-inf")),
+        key=lambda x: (x[1].get("metrics", {}).get(metric_key, float("-inf")) if "metrics" in x[1] else float("-inf")),
         reverse=True
     )
 
