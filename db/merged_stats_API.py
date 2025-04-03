@@ -30,6 +30,10 @@ def get_top_graphical_entries(metric_key, n):
         k: v for k, v in data.items() if v.get("default-page-type") == "weave-graphical"
     }
 
+    for k, v in filtered_entries.items():
+        if "metrics" not in v:
+            print(f"Warning: Entry {k} is missing 'metrics'")
+
     sorted_entries = sorted(
         filtered_entries.items(),
         key=lambda x: x[1].get("metrics", {}).get(metric_key, float("-inf")),
