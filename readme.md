@@ -4,8 +4,12 @@ Collection of tools to fetch and link data from different parts of the Research 
 
 # todo
 
-* sort by weave type
+* make posix based update of expo-data
 * metrics
+
+# done
+
+[x] sort by weave type
 
 # later
 
