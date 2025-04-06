@@ -28,5 +28,6 @@ with open("../research/internal_research.json", "r") as file:
             print(f"Folder '{id}' does not exist — treating as outdated.")
             outdated_expositions.append(exposition)
 
+print(len(outdated_expositions))
 with open("../research/outdated_expositions.json", "w") as outfile:
     json.dump(outdated_expositions, outfile, indent=2)
