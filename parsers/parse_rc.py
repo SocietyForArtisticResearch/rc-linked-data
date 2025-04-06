@@ -108,8 +108,10 @@ if __name__ == "__main__":
     else:
         rcMisc.getInternalResearch("../research")
         print(f"Using internal research")
-        with open("../research/internal_research.json", "r") as file:
+        #with open("../research/internal_research.json", "r") as file:
+        with open("../research/outdated_expositions.json", "r") as file:
             research = json.load(file)
+        print(f"Processing {len(research)} expositions.")
         for index, exposition in enumerate(research):
             print(f"Processing exposition {index + 1}/{len(research)}")
             url = exposition["default-page"]
