@@ -1,7 +1,20 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import json
 
 app = Flask(__name__)
+
+trusted_origins = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:3000",  # for other setups
+    "https://keywords.sarconference2016.net",
+    # add more if needed
+]
+
+CORS(app, origins=trusted_origins)
+
+
 
 with open("../research/merged_stats.json", "r", encoding="utf-8") as file:
     data = json.load(file)
