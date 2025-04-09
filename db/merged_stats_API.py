@@ -107,7 +107,8 @@ def sort_by_tool():
         "tool-slideshow",
         "tool-pdf",
         "tool-text",
-        "tool-simpletext"
+        "tool-simpletext",
+        "tool-shape",
     }
 
     if not tool_type or tool_type not in valid_tools:

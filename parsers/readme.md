@@ -33,7 +33,7 @@ python3 parse_expo.py "default-page" 0 1 0 0 auth
 
 ### Usage:
 ```
-python3 parse_rc.py <debug> <download> <shot> <force> [auth] [lookup]
+python3 parse_rc.py <debug> <download> <shot> <map> <force> [auth] [lookup]
     
 Arguments:
     <debug>     : Debug mode (1 for enabled, 0 for disabled).
