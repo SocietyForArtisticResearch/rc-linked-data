@@ -1,8 +1,16 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import json
+from flasgger import Swagger
 
 app = Flask(__name__)
+swagger = Swagger(app, template={
+    "info": {
+        "title": "RC-Linked-Data API",
+        "description": "Documentation for the map.rcdata API endpoints. Browse and search the Research Catalogue by tool types, graphical metrics etc.\nFull docs here: https://github.com/SocietyForArtisticResearch/rc-linked-data/blob/main/db/merged_stats_API.py",
+        "version": "1.0"
+    }
+})
 
 trusted_origins = [
     "http://localhost:8080",
@@ -157,7 +165,118 @@ def filter_by_page_type():
 
     return jsonify([{"id": k, **v} for k, v in filtered_entries.items()])
 
+    
+@app.route("/sort-by-tool", methods=["GET"])
+def sort_by_tool_swagger():
+    """
+    Sort expositions by a specific tool type
+    ---
+    parameters:
+      - name: tool
+        in: query
+        type: string
+        required: true
+        description: >
+            Tool type to filter by (tool-video,
+            tool-audio,
+            tool-picture,
+            tool-slideshow,
+            tool-pdf,
+            tool-text,
+            tool-shape)
+      - name: n
+        in: query
+        type: integer
+        required: false
+        default: 50
+        description: Number of results to return
+      - name: page_type
+        in: query
+        type: string
+        required: false
+        description: Page type to filter by (e.g. weave-graphical)
+    responses:
+      200:
+        description: A list of entries sorted by tool usage
+    """
+    
 
+@app.route("/highest-total-tools", methods=["GET"])
+def highest_total_tools_swagger():
+    """
+    Get expositions with the highest total number of tools
+    ---
+    parameters:
+      - name: n
+        in: query
+        type: integer
+        required: false
+        default: 50
+        description: Number of results to return
+      - name: page_type
+        in: query
+        type: string
+        required: false
+        description: Page type to filter by (optional)
+    responses:
+      200:
+        description: A list of entries sorted by total number of tools
+    """
+
+
+@app.route("/highest-total-pages", methods=["GET"])
+def highest_total_pages_swagger():
+     """
+    Get expositions with the highest total number of pages
+    ---
+    parameters:
+      - name: n
+        in: query
+        type: integer
+        required: false
+        default: 50
+        description: Number of results to return
+      - name: page_type
+        in: query
+        type: string
+        required: false
+        description: Page type to filter by (optional)
+    responses:
+      200:
+        description: A list of entries sorted by total number of pages
+    """
+    
+@app.route("/sort-by-metric", methods=["GET"])
+def sort_by_graphical_metric_swagger():
+    """
+    Sort expositions by graphical metrics
+    ---
+    parameters:
+      - name: metric
+        in: query
+        type: string
+        required: true
+        description: >
+            Metric to sort by (alignment_score,
+            horizontal_vertical_ratio,
+            overall_regular_score,
+            overlap_percentage,
+            size_uniformity_score,
+            spacing_score,
+            white_space_percentage)
+      - name: n
+        in: query
+        type: integer
+        required: false
+        default: 50
+        description: Number of results to return
+    responses:
+      200:
+        description: A list of entries sorted by the selected graphical metric
+    """
+    
+    
+    
 if __name__ == "__main__":
     app.run(debug=True)
     
