@@ -3,7 +3,7 @@ from flask_cors import CORS
 import json
 from flasgger import Swagger
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path="/flasgger_static")
 swagger = Swagger(app, template={
     "info": {
         "title": "RC-Linked-Data API",
