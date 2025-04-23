@@ -1,3 +1,10 @@
+# merge-stats
+
+Mongodb is currently not used
+mere-stats.py will merge each parsed exposition (from parsers/parse_rc.py) into a single .json that can then be server by
+the flaskapp.
+
+
 mongod --config mongod.conf
 sudo service	 mongod start
 
