@@ -275,6 +275,28 @@ def sort_by_graphical_metric_swagger():
         description: A list of entries sorted by the selected graphical metric
     """
     
+@app.route("/exposition/<string:exposition_id>", methods=["GET"])
+def get_exposition_by_id(exposition_id):
+    """
+    Get a single exposition by its ID
+    ---
+    parameters:
+      - name: exposition_id
+        in: path
+        type: string
+        required: true
+        description: The unique ID of the exposition
+    responses:
+      200:
+        description: Exposition details
+      404:
+        description: Exposition not found
+    """
+    exposition = data.get(exposition_id)
+    if exposition:
+        return jsonify({"id": exposition_id, **exposition})
+    else:
+        return jsonify({"error": "Exposition not found"}), 404
     
     
 if __name__ == "__main__":
