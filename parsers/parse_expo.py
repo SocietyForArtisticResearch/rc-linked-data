@@ -71,6 +71,12 @@ def main(url, debug, download, shot, maps, force, session, **meta):
         print("Exposition not accessible.")
         return None
     
+    if rcPages.findMetaLink(parsed) == None:
+        print("Exposition does not exist.")
+        print("Deleting folder.")
+        shutil.rmtree(output_folder)
+        return None
+    
     else:
         try:
             meta_page_url = rcPages.findMetaLink(parsed)
