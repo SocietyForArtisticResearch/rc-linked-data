@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup
-import expo.rc_soup_parsers as rcParsers
-import expo.rc_soup_pages as rcPages
-import media.extract_copyrights as mediaParser
-import screenshots.screenshot as rcScreenshot
+from expo import rc_soup_parsers as rcParsers
+from expo import rc_soup_pages as rcPages
+from media import extract_copyrights as mediaParser
+from screenshots import screenshot as rcScreenshot
 from common.rc_session import rc_session
 from media.rc_merge_data import insert_copyrights
 from metrics.calc_metrics import calc_metrics
@@ -102,6 +102,7 @@ def main(url, debug, download, shot, maps, force, session, **meta):
                     case "weave-block":
                         toolsDict = rcParsers.parse_block(parsed, debug)
                         toolsMetrics = None
+                        map_file = None
                         if shot:
                             screenshot = rcScreenshot.screenshotBlock(clean_url(page), screenshots_folder, pageNumber)
                         else:
@@ -111,10 +112,12 @@ def main(url, debug, download, shot, maps, force, session, **meta):
                         toolsDict = None
                         toolsMetrics = None
                         screenshot = None
+                        map_file = None
                     case _:
                         toolsDict = None
                         toolsMetrics = None
                         screenshot = None
+                        map_file = None
                     
                 # all pages have id and type   
                 page_dict = {
