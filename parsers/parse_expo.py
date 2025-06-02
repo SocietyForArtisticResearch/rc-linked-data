@@ -88,6 +88,7 @@ def main(url, debug, download, shot, maps, force, session, **meta):
             for index, page in enumerate(pages):
                 subpage = session.get(clean_url(page))
                 parsed = BeautifulSoup(subpage.content, 'html.parser')
+                #print(parsed)
                 
                 pageNumber = rcPages.getPageNumber(page)
                 pageType = rcPages.getPageType(parsed)
@@ -98,6 +99,7 @@ def main(url, debug, download, shot, maps, force, session, **meta):
                     case "weave-graphical":
                         toolsDict = rcParsers.parse_graphical(parsed, debug)
                         toolsMetrics = calc_metrics(**toolsDict)
+                        hrefs = rcPages.getLinks(url, parsed)
                         if maps:
                             map_file = f"{maps_folder}/{pageNumber}.jpg"
                             generate_tools_map(map_file, 800, 600, **toolsDict)
@@ -108,6 +110,7 @@ def main(url, debug, download, shot, maps, force, session, **meta):
                     case "weave-block":
                         toolsDict = rcParsers.parse_block(parsed, debug)
                         toolsMetrics = None
+                        hrefs = rcPages.getLinks(url, parsed)
                         map_file = None
                         if shot:
                             screenshot = rcScreenshot.screenshotBlock(clean_url(page), screenshots_folder, pageNumber)
@@ -116,11 +119,13 @@ def main(url, debug, download, shot, maps, force, session, **meta):
                     case "iframe":
                         url = rcParsers.parse_iframe(parsed)
                         toolsDict = None
+                        hrefs = None
                         toolsMetrics = None
                         screenshot = None
                         map_file = None
                     case _:
                         toolsDict = None
+                        hrefs = None
                         toolsMetrics = None
                         screenshot = None
                         map_file = None
@@ -142,6 +147,9 @@ def main(url, debug, download, shot, maps, force, session, **meta):
                 # graphical pages have metrics and maps
                 if toolsMetrics:
                     page_dict["metrics"] = toolsMetrics
+                    
+                if hrefs:
+                    page_dict["hyperlinks"] = hrefs
                 
                 if maps:
                     page_dict["map"] = map_file
