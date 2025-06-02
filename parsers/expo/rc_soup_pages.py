@@ -2,6 +2,8 @@
 from bs4 import BeautifulSoup
 import requests
 import json
+from urllib.parse import urlparse
+from urllib.parse import unquote
 
 RCURL = 'https://www.researchcatalogue.net'
 JSONURL = "https://map.rcdata.org/internal_research.json"
@@ -108,23 +110,33 @@ def getDataFollowLinks(page):
     pix = page.find_all('div', class_='tool-picture')
     links = list(map(lambda div: div.get('data-follow-link'), pix))
     return links
-    
-from urllib.parse import urlparse
 
-from urllib.parse import urlparse
+whitelist = ["doi.org", "dx.doi.org"]
+
+def is_broken_link(url):
+    try:
+        if url.startswith("/"):
+            return False
+        if any(domain in url for domain in whitelist):
+            return False
+        response = requests.head(url, allow_redirects=True, timeout=5)
+        return response.status_code >= 400
+    except requests.RequestException:
+        return True
 
 def getLinks(expositionUrl, page):
     container_div = page.find('div', id='container-weave')
 
-    atags = findHrefsInPage(container_div) # extract all <a> tags
+    atags = findHrefsInPage(container_div)  # extract all <a> tags
     hrefs = [getHref(tag) for tag in atags]
 
-    picture_links = getDataFollowLinks(container_div) # links in pictures
+    picture_links = getDataFollowLinks(container_div)  # links in pictures
 
     urls = hrefs + picture_links
     clean_urls = list(set(
-        url for url in urls
-        if url and url.strip() and url.lower() != "no href"
+        unquote(url).strip().rstrip('/')
+        for url in urls
+        if url and url.strip() and url.lower().strip() != "no href"
     ))
 
     parsed = urlparse(expositionUrl)
@@ -136,6 +148,7 @@ def getLinks(expositionUrl, page):
     other_expo = []
     references = []
     external = []
+    broken = []
 
     for url in clean_urls:
         if "reference" in url:
@@ -150,11 +163,17 @@ def getLinks(expositionUrl, page):
         else:
             external.append(url)
 
+        # Check if the link is broken (only for absolute URLs)
+        if not url.startswith("/"):
+            if is_broken_link(url):
+                broken.append(url)
+
     return {
         "same_exposition": same_expo,
         "other_expositions": other_expo,
         "references": references,
-        "external": external
+        "external": external,
+        "broken": broken
     }
     
 def getPages(expositionUrl, page):
