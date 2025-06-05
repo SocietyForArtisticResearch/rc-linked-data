@@ -110,12 +110,16 @@ if __name__ == "__main__":
     else:
         rcMisc.getInternalResearch("../research", resume)
         print(f"Using internal research")
-        if force:
-            print("Forcing re-parse of all expositions.")
-            adv_research = "../research/internal_research.json"
-        else:
-            print("Skipping expositions that have already been parsed.")
+        if resume:
+            print("Resuming parsing.")
             adv_research = "../research/outdated_expositions.json"
+        else:
+            if force:
+                print("Forcing re-parse of all expositions.")
+                adv_research = "../research/internal_research.json"
+            else:
+                print("Skipping expositions that have already been parsed.")
+                adv_research = "../research/outdated_expositions.json"
         with open(adv_research, "r") as file:
             research = json.load(file)
         print(f"Processing {len(research)} expositions.")
