@@ -17,18 +17,19 @@ Arguments:
     <shot>      : Take screenshots (1 for enabled, 0 for disabled).
     <maps>      : Generate visual maps (1 for enabled, 0 for disabled).
     <force>     : Always parse an exposition, even when it has been parsed before (1 for enabled, 0 for disabled).
+    <resume>    : Update everything older than three days, even with force.
     [auth]      : Optional. If provided, prompts for authentication (email and password).
     [lookup]    : Provide a url, will look for any exposition links in the content of the page and download only those
 
 Examples:
     Without authentication:
-        python parse_rc.py 1 1 0 0 0 
+        python parse_rc.py 1 1 0 0 0 0
 
     With authentication:
-        python parse_rc.py 1 1 0 0 0 auth
+        python parse_rc.py 1 1 0 0 0 0 auth
  
     With lookup:
-       python parse_rc.py 1 1 0 0 0 auth lookup
+       python parse_rc.py 1 1 0 0 0 0 auth lookup
 """
     print(usage)
 
@@ -44,13 +45,14 @@ if __name__ == "__main__":
         shot = int(sys.argv[3])
         maps = int(sys.argv[4])
         force = int(sys.argv[5])
+        resume = int(sys.argv[6])
     except ValueError:
         print("Error: debug, download, shot and maps must be integers (1 or 0).")
         print_usage()
         sys.exit(1)
 
     #login to RC
-    if len(sys.argv) > 6 and sys.argv[6] == "auth":
+    if len(sys.argv) > 7 and sys.argv[7] == "auth":
         user = input("Email: ")
         password = getpass.getpass("Password: ")
         session = rc_session({'username': user, 'password': password})
@@ -106,7 +108,7 @@ if __name__ == "__main__":
                 with open("../research/rc_advanced.json", 'w') as outfile:
                     outfile.write(rc_advanced_json)
     else:
-        rcMisc.getInternalResearch("../research")
+        rcMisc.getInternalResearch("../research", resume)
         print(f"Using internal research")
         if force:
             print("Forcing re-parse of all expositions.")
