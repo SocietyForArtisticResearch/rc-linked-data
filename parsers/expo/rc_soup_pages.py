@@ -70,8 +70,10 @@ def findMetaLink(parsed):
             href = a_tag.get('href')
         else:
             print("Metapage: no <a> tag found.")
+            href = None
     else:
         print("Metapage: no <li> tag with class 'menu menu-meta' found.")
+        return None
         
     return href
 
