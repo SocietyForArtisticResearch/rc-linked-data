@@ -4,13 +4,15 @@ from pathlib import Path
 import requests
 import json
 import os
+import time
 
 RCURL = 'https://www.researchcatalogue.net'
 JSONURL = "https://map.rcdata.org/internal_research.json"
 
 outdated_expositions = []
+number_of_days = 3
 
-def getInternalResearch(path="../research"):
+def getInternalResearch(path="../research", resume=False):
     os.makedirs(path, exist_ok=True)
     response = requests.get(JSONURL)
     data = response.json()
@@ -31,13 +33,17 @@ def getInternalResearch(path="../research"):
 
             if folder_path.exists() and folder_path.is_dir():
                 mod_time = folder_path.stat().st_mtime
-                last_modified = exposition["last-modified"]
-                
-                if mod_time < last_modified:
-                    print(f"Folder '{id}' is outdated.")
-                    outdated_expositions.append(exposition)
+                if resume:
+                    if (time.time() - mod_time) < (number_of_days * 24 * 3600):
+                        outdated_expositions.append(exposition)
                 else:
-                    print(f"Folder '{id}' is up to date.")
+                    last_modified = exposition["last-modified"]
+                    
+                    if mod_time < last_modified:
+                        print(f"Folder '{id}' is outdated.")
+                        outdated_expositions.append(exposition)
+                    else:
+                        print(f"Folder '{id}' is up to date.")
             else:
                 print(f"Folder '{id}' does not exist — treating as outdated.")
                 outdated_expositions.append(exposition)
