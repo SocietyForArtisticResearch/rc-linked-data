@@ -2,6 +2,8 @@
 from bs4 import BeautifulSoup
 import requests
 import json
+from urllib.parse import urlparse
+from urllib.parse import unquote
 
 RCURL = 'https://www.researchcatalogue.net'
 JSONURL = "https://map.rcdata.org/internal_research.json"
@@ -103,6 +105,76 @@ def isSubPage(expositionUrl, url):
             return False
     except:
         return False
+    
+def getDataFollowLinks(page):
+    pix = page.find_all('div', class_='tool-picture')
+    links = list(map(lambda div: div.get('data-follow-link'), pix))
+    return links
+
+whitelist = ["doi.org", "dx.doi.org"]
+
+def is_broken_link(url):
+    try:
+        if url.startswith("/"):
+            return False
+        if any(domain in url for domain in whitelist):
+            return False
+        response = requests.head(url, allow_redirects=True, timeout=5)
+        return response.status_code >= 400
+    except requests.RequestException:
+        return True
+
+def getLinks(expositionUrl, page):
+    container_div = page.find('div', id='container-weave')
+
+    atags = findHrefsInPage(container_div)  # extract all <a> tags
+    hrefs = [getHref(tag) for tag in atags]
+
+    picture_links = getDataFollowLinks(container_div)  # links in pictures
+
+    urls = hrefs + picture_links
+    clean_urls = list(set(
+        unquote(url).strip().rstrip('/')
+        for url in urls
+        if url and url.strip() and url.lower().strip() != "no href"
+    ))
+
+    parsed = urlparse(expositionUrl)
+    parts = parsed.path.strip("/").split("/")
+    base_id = parts[1] if len(parts) >= 2 and parts[0] == "view" else None
+    base_prefix = f"https://www.researchcatalogue.net/view/{base_id}/" if base_id else None
+
+    same_expo = []
+    other_expo = []
+    references = []
+    external = []
+    broken = []
+
+    for url in clean_urls:
+        if "reference" in url:
+            references.append(url)
+        elif base_prefix and url.startswith(base_prefix):
+            same_expo.append(url)
+        elif (
+            url.startswith("https://www.researchcatalogue.net/view/") or
+            url.startswith("/profile/show-exposition?exposition=")
+        ):
+            other_expo.append(url)
+        else:
+            external.append(url)
+
+        # Check if the link is broken (only for absolute URLs)
+        if not url.startswith("/"):
+            if is_broken_link(url):
+                broken.append(url)
+
+    return {
+        "same_exposition": same_expo,
+        "other_expositions": other_expo,
+        "references": references,
+        "external": external,
+        "broken": broken
+    }
     
 def getPages(expositionUrl, page):
     atags = findHrefsInPage(page) #find all links in page
