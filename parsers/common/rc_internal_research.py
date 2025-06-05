@@ -34,7 +34,7 @@ def getInternalResearch(path="../research", resume=False):
             if folder_path.exists() and folder_path.is_dir():
                 mod_time = folder_path.stat().st_mtime
                 if resume:
-                    if (time.time() - mod_time) < (number_of_days * 24 * 3600):
+                    if (time.time() - mod_time) > (number_of_days * 24 * 3600):
                         outdated_expositions.append(exposition)
                 else:
                     last_modified = exposition["last-modified"]
