@@ -28,7 +28,8 @@ for folder_name in os.listdir(main_directory):
                         "number-of-pages": number_of_pages,
                         "default-page-type": None,
                         "default-page": None,
-                        "tool-counts": defaultdict(int),  # Default dictionary for counting tools
+                        "tool-counts": defaultdict(int),  # count tools
+                        "link-counts": defaultdict(int),  # count hyperliks
                         "total-number-of-tools": 0
                     }
 
@@ -59,6 +60,12 @@ for folder_name in os.listdir(main_directory):
                             tool_count = len(tool_list)
                             result_entry["tool-counts"][tool_type] += tool_count
                             result_entry["total-number-of-tools"] += tool_count  # Update total count
+                            
+                        links = page_data.get("hyperlinks", {})
+                        print(links.items())
+                        for link_type, link_list in links.items():
+                            link_count = len(link_list)
+                            result_entry["link-counts"][link_type] += link_count
 
                     # Convert defaultdict to regular dictionary
                     result_entry["tool-counts"] = dict(result_entry["tool-counts"])
