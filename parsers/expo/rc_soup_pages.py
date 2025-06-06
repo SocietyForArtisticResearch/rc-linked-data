@@ -150,7 +150,7 @@ def getLinks(expositionUrl, page):
     other_expo = []
     references = []
     external = []
-    broken = []
+    #broken = []
 
     for url in clean_urls:
         if "reference" in url:
@@ -166,16 +166,16 @@ def getLinks(expositionUrl, page):
             external.append(url)
 
         # Check if the link is broken (only for absolute URLs)
-        if not url.startswith("/"):
-            if is_broken_link(url):
-                broken.append(url)
+        #if not url.startswith("/"):
+        #    if is_broken_link(url):
+        #        broken.append(url)
 
     return {
         "same_exposition": same_expo,
         "other_expositions": other_expo,
         "references": references,
         "external": external,
-        "broken": broken
+        #"broken": broken
     }
     
 def getPages(expositionUrl, page):
