@@ -33,6 +33,22 @@ def get_top_tools(tool_type, n, page_type=None):
 
     return [{"id": entry[0], **entry[1]} for entry in sorted_entries[:n]]
 
+def get_top_links(link_type, n):
+    if isinstance(link_type, str):
+        link_type = [link_type]
+        
+    filtered_entries = {
+        k: v for k, v in data.items()
+    }
+
+    sorted_entries = sorted(
+        filtered_entries.items(),
+        key=lambda x: sum(x[1]["link-counts"].get(tool, 0) for tool in link_type),
+        reverse=True
+    )
+
+    return [{"id": entry[0], **entry[1]} for entry in sorted_entries[:n]]
+
 
 def get_top_graphical_entries(metric_key, n):
     filtered_entries = {
@@ -100,6 +116,21 @@ def sort_by_tool():
         tool_type = ["tool-text", "tool-simpletext"]
 
     return jsonify(get_top_tools(tool_type, n, page_type))
+
+
+@app.route("/sort-by-link", methods=["GET"])
+def sort_by_link():
+    link_type = request.args.get("link_type")
+    n = int(request.args.get("n", 50))
+
+    valid_links = {
+        "same_exposition", "other_expositions", "references", "external"
+    }
+
+    if not link_type or link_type not in valid_links:
+        return jsonify({"error": f"Invalid or missing link type. Choose from: {', '.join(valid_links)}"}), 400
+
+    return jsonify(get_top_links(link_type, n))
 
 
 @app.route("/sort-by-metric", methods=["GET"])
