@@ -57,3 +57,22 @@ With lookup:
 ```
 python3 parse_rc.py 0 1 0 0 0 auth "lookup_url"
 ```
+
+# some bug
+
+```python 
+raise InvalidSchema(f"No connection adapters were found for {url!r}")
+requests.exceptions.InvalidSchema: No connection adapters were found for '"https://www.researchcatalogue.net/view/428159/428160/909/85'
+
+Traceback (most recent call last):
+  File "/home/casper/devel/rc-linked-data/parsers/parse_rc.py", line 130, in <module>
+    expo = parse_expo(url, debug, download, shot, maps, force, session, **meta)
+  File "/home/casper/devel/rc-linked-data/parsers/parse_expo.py", line 169, in main
+    exp_dict["pages"] = insert_copyrights(copyrights, exp_dict["pages"], session, media_folder, download)
+                        ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/casper/devel/rc-linked-data/parsers/media/rc_merge_data.py", line 6, in insert_copyrights
+    for page_id, page_data in exposition.items():
+                              ^^^^^^^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'items'
+Process 2681377 dead!
+Process 2681377 detected```

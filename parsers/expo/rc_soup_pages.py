@@ -126,56 +126,61 @@ def is_broken_link(url):
     except requests.RequestException:
         return True
 
+def is_researchcatalogue_domain(url):
+    """Check if URL belongs to researchcatalogue.net domain or its subdomains"""
+    try:
+        parsed = urlparse(url)
+        domain = parsed.netloc.lower()
+        
+        # Handle cases where domain might be empty (relative URLs)
+        if not domain:
+            return False
+            
+        # Check if it's exactly researchcatalogue.net or a subdomain
+        return domain == 'researchcatalogue.net' or domain.endswith('.researchcatalogue.net')
+    except:
+        return False
+
 def getLinks(expositionUrl, page):
     container_div = page.find('div', id='container-weave')
-
-    atags = findHrefsInPage(container_div)  # extract all <a> tags
+    atags = findHrefsInPage(container_div) # extract all <a> tags
     hrefs = [getHref(tag) for tag in atags]
-
-    picture_links = getDataFollowLinks(container_div)  # links in pictures
-
+    picture_links = getDataFollowLinks(container_div) # links in pictures
     urls = hrefs + picture_links
     clean_urls = list(set(
         unquote(url).strip().rstrip('/')
         for url in urls
         if url and url.strip() and url.lower().strip() != "no href"
     ))
-
+    
     parsed = urlparse(expositionUrl)
     parts = parsed.path.strip("/").split("/")
     base_id = parts[1] if len(parts) >= 2 and parts[0] == "view" else None
     base_prefix = f"https://www.researchcatalogue.net/view/{base_id}/" if base_id else None
-
+    
     same_expo = []
     other_expo = []
     references = []
     external = []
-    #broken = []
-
+    
     for url in clean_urls:
         if "reference" in url:
             references.append(url)
         elif base_prefix and url.startswith(base_prefix):
             same_expo.append(url)
         elif (
-            url.startswith("https://www.researchcatalogue.net/view/") or
-            url.startswith("/profile/show-exposition?exposition=")
+            url.startswith("/profile/show-exposition?exposition=") or  # relative URL pattern
+            is_researchcatalogue_domain(url)  # any researchcatalogue.net domain
         ):
             other_expo.append(url)
         else:
             external.append(url)
-
-        # Check if the link is broken (only for absolute URLs)
-        #if not url.startswith("/"):
-        #    if is_broken_link(url):
-        #        broken.append(url)
-
+    
     return {
         "same_exposition": same_expo,
         "other_expositions": other_expo,
         "references": references,
         "external": external,
-        #"broken": broken
     }
     
 def getPages(expositionUrl, page):
