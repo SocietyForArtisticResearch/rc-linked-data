@@ -3,6 +3,7 @@ from flask_cors import CORS
 import json
 import signal
 import threading
+import os
 
 app = Flask(__name__)
 trusted_origins = [
@@ -191,5 +192,12 @@ def get_exposition_by_id(exposition_id):
         else:
             return jsonify({"error": "Exposition not found"}), 404
 
+PID_FILE = "flask_server.pid"
+
 if __name__ == "__main__":
+    # Store the current process ID
+    with open(PID_FILE, "w") as f:
+        f.write(str(os.getpid()))
+
     app.run(debug=True)
+
