@@ -1,5 +1,7 @@
 #tools to parse RC tools in expositions
 from bs4 import BeautifulSoup
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 TOOLS = [
     "tool-picture",
@@ -207,7 +209,37 @@ def removeStyle(text):
     #text = '\n'.join(chunk for chunk in chunks if chunk)
     return text
 
+def getAuthor(tool):
+    author = tool['data-text-author']
+    return author
+
+def getDate(tool):
+    date = tool['data-text-modified']
+    dt = datetime.strptime(date, "%d.%m.%Y - %H:%M:%S").replace(tzinfo=ZoneInfo("Europe/Vienna"))
+    ts = int(dt.timestamp())
+    return ts
+
 def getTextAttributes(tool):
+    tool_id = getId(tool)
+    tool_style = getStyle(tool)
+    tool_dimensions = getStyleAttributes(tool_style)
+    tool_content = getContent(tool)
+    tool_source = removeStyle(str(tool_content))
+    last_modified_by = getAuthor(tool)
+    last_modified_at = getDate(tool)
+    tool_dict = {
+        "id": tool_id,
+        "style": tool_style,
+        "dimensions": tool_dimensions,
+        "content": str(tool_content),
+        "src": tool_source,
+        "tool": str(tool),
+        "last-modified-by": last_modified_by,
+        "last-modified-at": last_modified_at
+        }
+    return tool_dict
+
+def getSimpleTextAttributes(tool):
     tool_id = getId(tool)
     tool_style = getStyle(tool)
     tool_dimensions = getStyleAttributes(tool_style)
@@ -226,7 +258,10 @@ def getTextAttributes(tool):
 def getTexts(driver, which, debug):
     try:
         texts = driver.find_all(class_= which)
-        attributes = list(map(getTextAttributes, texts))
+        if which == "tool-text":
+            attributes = list(map(getTextAttributes, texts))
+        else:  
+            attributes = list(map(getSimpleTextAttributes, texts))
     except:
         if debug: print("found 0 " + which)
         return []
