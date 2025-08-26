@@ -1,14 +1,14 @@
 import os
 import json
 import re
+import signal
 from collections import defaultdict
 
 main_directory = "../research" 
 output_file = "../research/merged_stats.json"
+pid_file = "flask_server.pid"  # <-- PID file to send SIGUSR1 to
 
 merged_data = {}
-
-#id_pattern = re.compile(r"/(\d+)$")
 
 for folder_name in os.listdir(main_directory):
     folder_path = os.path.join(main_directory, folder_name)
@@ -28,49 +28,42 @@ for folder_name in os.listdir(main_directory):
                         "number-of-pages": number_of_pages,
                         "default-page-type": None,
                         "default-page": None,
-                        "tool-counts": defaultdict(int),  # count tools
-                        "link-counts": defaultdict(int),  # count hyperliks
+                        "tool-counts": defaultdict(int),
+                        "link-counts": defaultdict(int),
                         "total-number-of-tools": 0
                     }
 
-                    #meta = data.get("meta", {})
                     default_page_url = data.get("url", "")
-
                     result_entry["default-page"] = default_page_url
 
-                    match = default_page_url.rstrip("/").split("/")[5]
-                    if match:
-                        default_page_id = match#.group(1)  # Extracted ID as string
+                    parts = default_page_url.rstrip("/").split("/")
+                    if len(parts) >= 6:
+                        default_page_id = parts[5]
 
-                        # Find the type of the default page in the pages dictionary
                         if default_page_id in pages:
                             default_page_data = pages[default_page_id]
                             result_entry["default-page-type"] = default_page_data.get("type", None)
 
-                            # If the default-page type is "weave-graphical", copy over "metrics"
                             if result_entry["default-page-type"] == "weave-graphical":
                                 metrics = default_page_data.get("metrics", {})
                                 if metrics:
                                     result_entry["metrics"] = metrics
 
-                    # Loop through all pages to count tools by type
                     for page_data in pages.values():
                         tools = page_data.get("tools", {})
                         for tool_type, tool_list in tools.items():
                             tool_count = len(tool_list)
                             result_entry["tool-counts"][tool_type] += tool_count
-                            result_entry["total-number-of-tools"] += tool_count  # Update total count
+                            result_entry["total-number-of-tools"] += tool_count
                             
                         links = page_data.get("hyperlinks", {})
-                        print(links.items())
                         for link_type, link_list in links.items():
                             link_count = len(link_list)
                             result_entry["link-counts"][link_type] += link_count
 
-                    # Convert defaultdict to regular dictionary
                     result_entry["tool-counts"] = dict(result_entry["tool-counts"])
+                    result_entry["link-counts"] = dict(result_entry["link-counts"])
 
-                    # Store processed data under the folder name (ID)
                     merged_data[folder_name] = result_entry
 
             except json.JSONDecodeError as e:
@@ -82,3 +75,16 @@ with open(output_file, "w", encoding="utf-8") as outfile:
     json.dump(merged_data, outfile, indent=4)
 
 print(f"Processed {len(merged_data)} JSON files into {output_file}.")
+
+# 🔔 Send SIGUSR1 to Flask server
+try:
+    with open(pid_file, "r") as f:
+        pid = int(f.read().strip())
+    os.kill(pid, signal.SIGUSR1)
+    print(f"Sent SIGUSR1 to Flask server (PID {pid}) to reload data.")
+except FileNotFoundError:
+    print(f"PID file '{pid_file}' not found. Flask server may not be running.")
+except ProcessLookupError:
+    print(f"No process found with PID {pid}.")
+except Exception as e:
+    print(f"Failed to send signal: {e}")
