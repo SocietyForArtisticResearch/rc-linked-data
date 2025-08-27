@@ -170,7 +170,8 @@ def getLinks(expositionUrl, page):
             same_expo.append(url)
         elif (
             url.startswith("/profile/show-exposition?exposition=") or  # relative URL pattern
-            is_researchcatalogue_domain(url)  # any researchcatalogue.net domain
+            is_researchcatalogue_domain(url) or # any researchcatalogue.net domain
+            ("10.22501" in url)  # the RC DOI scope
         ):
             other_expo.append(url)
         else:
