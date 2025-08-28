@@ -218,3 +218,18 @@ def getBlockTools(page, which, debug=False):
         print(f"Found {len(all_attributes)} {which}")
 
     return all_attributes
+
+def getIframe(soup):
+    """
+    Finds the first iframe src attribute in a BeautifulSoup parsed HTML object.
+    
+    Args:
+        soup: BeautifulSoup object containing parsed HTML
+        
+    Returns:
+        str: The src attribute value of the first iframe, or None if no iframe found
+    """
+    iframe = soup.find('iframe')
+    if iframe and iframe.get('src'):
+        return iframe.get('src')
+    return None
