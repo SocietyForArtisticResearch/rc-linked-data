@@ -140,6 +140,9 @@ def is_researchcatalogue_domain(url):
         return domain == 'researchcatalogue.net' or domain.endswith('.researchcatalogue.net')
     except:
         return False
+    
+def is_media_url(url):
+    "media.researchcatalogue.net" in url
 
 def getLinks(expositionUrl, page):
     container_div = page.find('div', id='container-weave')
@@ -168,6 +171,8 @@ def getLinks(expositionUrl, page):
             references.append(url)
         elif base_prefix and url.startswith(base_prefix):
             same_expo.append(url)
+        elif is_media_url(url):
+            continue # this is a pdf, video or other object, not a real link
         elif (
             url.startswith("/profile/show-exposition?exposition=") or  # relative URL pattern
             is_researchcatalogue_domain(url) or # any researchcatalogue.net domain
