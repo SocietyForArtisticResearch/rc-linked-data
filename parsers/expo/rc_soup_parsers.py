@@ -17,7 +17,7 @@ def parse_block(parsed, debug=0):
     tool_entries = {} 
     for tool in ALLTOOLS:
         if tool in TEXTTOOLS:
-            if (elements := getBlockTexts(parsed, tool, debug)):
+            if (elements := getTexts(parsed, tool, debug)):
                 tool_entries[tool] = elements
         else:
             if (elements := getBlockTools(parsed, tool, debug)):
@@ -36,3 +36,4 @@ def parse_text():
 def parse_html():
     # parse weave html
     return None
+
