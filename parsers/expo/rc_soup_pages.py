@@ -2,7 +2,7 @@
 from bs4 import BeautifulSoup
 import requests
 import json
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
 from urllib.parse import unquote
 
 RCURL = 'https://www.researchcatalogue.net'
@@ -144,6 +144,20 @@ def is_researchcatalogue_domain(url):
 def is_media_url(url):
     "media.researchcatalogue.net" in url
 
+def clean_url(href: str, base: str = RCURL) -> str:
+    """Normalize and sanitize a URL so requests can handle it."""
+    if not href:
+        return ""
+    href = unquote(href).strip().strip('\'"').rstrip('/')
+    if href.lower() == "no href":
+        return ""
+    if href.startswith("//"):
+        href = "https:" + href
+    if not href.startswith(("http://", "https://")):
+        href = urljoin(base, href)
+    href = requests.utils.requote_uri(href)
+    return href
+
 def getLinks(expositionUrl, page):
     container_div = page.find('div', id='container-weave')
     atags = findHrefsInPage(container_div) # extract all <a> tags
@@ -151,7 +165,7 @@ def getLinks(expositionUrl, page):
     picture_links = getDataFollowLinks(container_div) # links in pictures
     urls = hrefs + picture_links
     clean_urls = list(set(
-        unquote(url).strip().rstrip('/')
+        clean_url(url)
         for url in urls
         if url and url.strip() and url.lower().strip() != "no href"
     ))
