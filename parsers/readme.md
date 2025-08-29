@@ -8,25 +8,33 @@ Collection of tools to parse Research Catalogue content. It links data found in 
 
 ### Usage:
 ```
-python3 parse_expo.py <url> <debug> <download> <shot> [auth]
+python3 parse_expo.py <url> <debug> <download> <shot> <maps> <force> [auth]
     
 Arguments:
     <url>       : Default page of the exposition to process.
     <debug>     : Debug mode (1 for enabled, 0 for disabled).
     <download>  : Download assets (1 for enabled, 0 for disabled).
     <shot>      : Take screenshots (1 for enabled, 0 for disabled).
+    <maps>      : Make visual abstract (page maps) (1 for enabled)
     <force>     : Always parse an exposition, even when it has been parsed before (1 for enabled, 0 for disabled).
     [auth]      : Optional. If provided, prompts for authentication.
 ```
 ### Examples:
 Without authentication:
 ```
-python3 parse_expo.py "default-page" 0 1 0 0
+python3 parse_expo.py "default-page" 0 1 0 0 0
 ```
 With authentication:
 ```
-python3 parse_expo.py "default-page" 0 1 0 0 auth
+python3 parse_expo.py "default-page" 0 1 0 0 0 auth
 ```
+
+No auth, do not download, create screenshots and maps and force:
+```
+python3 parse_expo.py "default-page" 1 0 1 1 1
+```
+
+
 ## Parse Multiple Expositions
 
 *parse_rc.py* parses multiple expositions. It writes content to a json file and optionally downloads related media, maps and screenshots for each expositions. It also produces a json containing all parsed expositions.

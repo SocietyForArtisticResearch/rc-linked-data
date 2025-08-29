@@ -2,7 +2,7 @@
 from bs4 import BeautifulSoup
 import requests
 import json
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, urljoin
 from urllib.parse import unquote
 
 RCURL = 'https://www.researchcatalogue.net'
