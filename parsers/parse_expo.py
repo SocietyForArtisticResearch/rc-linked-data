@@ -165,8 +165,10 @@ def main(url, debug, download, shot, maps, force, session, **meta):
             print(error)
             exp_dict["pages"] = error
         
-        if copyrights: 
+        if copyrights and (not isinstance(exp_dict,str,bytes)): 
             exp_dict["pages"] = insert_copyrights(copyrights, exp_dict["pages"], session, media_folder, download)
+        else:
+            print(f"exp_dict is not a string: ${exp_dict}")
             
         if meta:
             exp_dict["meta"] = meta
