@@ -46,6 +46,7 @@ def main(url, debug, download, shot, maps, force, session, **meta):
     expo = session.get(clean_url(url))
     parsed = BeautifulSoup(expo.content, 'html.parser')
     
+    # check for access restrictions / ghost expositions
     if "Authentication required" in parsed.get_text():
         print("Exposition with restricted visibility.")
         return None
@@ -54,32 +55,39 @@ def main(url, debug, download, shot, maps, force, session, **meta):
         print("Exposition not accessible.")
         return None
     
-    meta_page_url = rcPages.findMetaLink(parsed)
-
-    if meta_page_url is None:
-        print("Exposition does not exist.")
-        print("Deleting folder.")
-        shutil.rmtree(output_folder)
-        return None
-
-    try:
-        meta = parse_meta_page(meta_page_url, session)
+    if meta:
+        meta_page_url = meta["meta-data-page"]
         modified = meta["last-modified"]
         print(f"Last-modified at: {datetime.datetime.fromtimestamp(modified)}")
-    except:
-        print("Failed to parse meta page.")
-        return None
+    else:
+        meta_page_url = rcPages.findMetaLink(parsed)
+        if meta_page_url is None:
+            print("Exposition does not exist.")
+            print("Deleting folder.")
+            shutil.rmtree(output_folder)
+            return None
+        
+        try:
+            meta = parse_meta_page(meta_page_url, session)
+            modified = meta["last-modified"]
+            print(f"Last-modified at: {datetime.datetime.fromtimestamp(modified)}")
+        except:
+            print("Failed to parse meta page.")
+            return None
     
+    # expo helth checks ok
+    # check if local copy exists and is up to date
     if os.path.exists(output_folder):
         local_timestamp = os.path.getmtime(output_folder)
         print(f"Local folder timestamp: {datetime.datetime.fromtimestamp(local_timestamp)}")
-        if meta["last-modified"] + 86400 > local_timestamp: #add one day because rc timestamp is always at 00:00
+        if modified + 86400 > local_timestamp: #add one day because rc timestamp is always at 00:00
             print(f"Exposition already parsed, but maybe outdated. Reparsing at: {output_folder}.")
             shutil.rmtree(output_folder)
         else:
             print(f"Exposition already parsed at: {output_folder}. Skipping.")
             return
     
+    # parse
     try:
         os.makedirs(output_folder, exist_ok=True)
         output_file_path = os.path.join(output_folder, f'{num}.json')
@@ -96,7 +104,6 @@ def main(url, debug, download, shot, maps, force, session, **meta):
             os.makedirs(maps_folder, exist_ok=True)
         
         exp_dict = {"id": int(num), "url": url, "pages": {}}
-        meta_page_url = rcPages.findMetaLink(parsed)
         copyrights = mediaParser.extract_copyrights(meta_page_url, session)
         pages = rcPages.getAllPages(url, parsed, meta_page_url, session)
         exp_dict["pages"] = {rcPages.getPageNumber(page): {} for page in pages}
@@ -105,7 +112,6 @@ def main(url, debug, download, shot, maps, force, session, **meta):
         for index, page in enumerate(pages):
             subpage = session.get(clean_url(page))
             parsed = BeautifulSoup(subpage.content, 'html.parser')
-            #print(parsed)
             
             pageNumber = rcPages.getPageNumber(page)
             pageType = rcPages.getPageType(parsed)
@@ -187,14 +193,7 @@ def main(url, debug, download, shot, maps, force, session, **meta):
     else:
         print(f"exp_dict is not a string: ${exp_dict}")
         
-    if meta:
-        exp_dict["meta"] = meta
-    else:
-        try:
-            meta = parse_meta_page(meta_page_url, session)
-            exp_dict["meta"] = meta
-        except:
-            print("Failed to parse meta page.")
+    exp_dict["meta"] = meta
             
     exp_json = json.dumps(exp_dict, indent=2)
     with open(output_file_path, 'w') as outfile:
@@ -226,7 +225,7 @@ Examples:
     print(usage)
 
 if __name__ == "__main__":
-    if len(sys.argv) < 6:
+    if len(sys.argv) < 7:
         print("Error: Missing required arguments.")
         print_usage()
         sys.exit(1)
