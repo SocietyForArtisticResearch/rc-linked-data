@@ -158,6 +158,9 @@ def main(url, debug, download, shot, maps, force, session, research_folder="../r
                 page_dict["metrics"] = toolsMetrics
             if hrefs:
                 page_dict["hyperlinks"] = hrefs
+            if hrefs:
+                for category, links in hrefs.items():
+                    all_links[category].update(links)
             if map_file:
                 page_dict["map"] = map_file
             if iframe_url:
