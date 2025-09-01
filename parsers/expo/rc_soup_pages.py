@@ -176,7 +176,6 @@ def categorize_urls(clean_urls, base_prefix=None):
     external = []
 
     for url in clean_urls:
-        print(url)
 
         if is_media_url(url):
             continue  # skip PDFs, videos, local files, etc.
