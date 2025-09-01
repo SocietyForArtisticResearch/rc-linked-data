@@ -111,7 +111,7 @@ def main(url, debug, download, shot, maps, force, session, research_folder="../r
         pages = rcPages.getAllPages(url, parsed, meta_page_url, session)
         exp_dict["pages"] = {rcPages.getPageNumber(page): {} for page in pages}
         print(f"Found {len(pages)} pages.")
-            all_links = defaultdict(set)
+        all_links = defaultdict(set)
 
         for index, page in enumerate(pages):
             subpage = session.get(clean_url(page))
@@ -168,7 +168,7 @@ def main(url, debug, download, shot, maps, force, session, research_folder="../r
     except Exception as e:
         error = f"An error occurred: {e}. Traceback: {traceback.format_exc()}"
         print(error)
-            exp_dict["error"] = error
+        exp_dict["error"] = error
         exp_dict["pages"] = {}
 
     if copyrights and not isinstance(exp_dict, (str, bytes)):
@@ -180,7 +180,7 @@ def main(url, debug, download, shot, maps, force, session, research_folder="../r
 
     exp_dict["meta"] = meta
 
-        exp_dict["hyperlinks"] = {k: sorted(v) for k, v in all_links.items()}
+    exp_dict["hyperlinks"] = {k: sorted(v) for k, v in all_links.items()}
                 
     with open(output_file_path, "w") as outfile:
         json.dump(exp_dict, outfile, indent=2)
