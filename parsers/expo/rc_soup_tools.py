@@ -78,8 +78,14 @@ def cellPercentage(tool):
 def getImageSrc(content):
     if (img := content.find("img", src=True)):
         return img["src"]
+
     if (other := content.find(attrs={"src": True})):
         return other["src"]
+
+    # check for <object data="..."> (SVGs)
+    if (obj := content.find("object", attrs={"data": True})):
+        return obj["data"]
+
     return None
 
 def getSlideshowSrc(content):
