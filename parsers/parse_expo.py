@@ -200,11 +200,14 @@ Arguments:
     [auth]      : Optional. If provided, prompts for authentication.
 
 Examples:
-    Without authentication:
-        python3 parse_expo.py "default-page" 0 1 0 0
+    Without authentication (no force)
+        python3 parse_expo.py "default-page" 0 1 0 0 0
 
     With authentication:
-        python3 parse_expo.py "default-page" 0 1 0 0 auth
+        python3 parse_expo.py "default-page" 0 1 0 0 0 auth
+
+    With authentication:
+        python3 parse_expo.py "default-page" 0 1 0 0 1 auth
 """
     print(usage)
 

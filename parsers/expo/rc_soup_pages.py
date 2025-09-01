@@ -181,10 +181,10 @@ def getLinks(expositionUrl, page):
     external = []
     
     for url in clean_urls:
-        if "reference" in url:
-            references.append(url)
-        elif is_media_url(url):
+        if is_media_url(url):
             continue # this is a pdf, video or other object, not a real link
+        elif "reference" in url:
+            references.append(url)
         elif base_prefix and url.startswith(base_prefix):
             same_expo.append(url)
         elif (
