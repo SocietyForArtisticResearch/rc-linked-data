@@ -138,11 +138,22 @@ def is_researchcatalogue_domain(url):
             
         # Check if it's exactly researchcatalogue.net or a subdomain
         return domain == 'researchcatalogue.net' or domain.endswith('.researchcatalogue.net')
-    except:
+    except Exception:
         return False
     
 def is_media_url(url):
-    return "media.researchcatalogue.net" in url
+    """Filter out RC media server URLs and local file:// links."""
+    parsed = urlparse(url)
+
+    # local file links
+    if parsed.scheme == "file":
+        return True
+
+    # RC media server
+    if parsed.netloc == "media.researchcatalogue.net":
+        return True
+
+    return False
 
 def clean_url(href: str, base: str = RCURL) -> str:
     """Normalize and sanitize a URL so requests can handle it."""
@@ -158,51 +169,60 @@ def clean_url(href: str, base: str = RCURL) -> str:
     href = requests.utils.requote_uri(href)
     return href
 
-def getLinks(expositionUrl, page):
-    container_div = page.find('div', id='container-weave')
-    atags = findHrefsInPage(container_div) # extract all <a> tags
-    hrefs = [getHref(tag) for tag in atags]
-    picture_links = getDataFollowLinks(container_div) # links in pictures
-    urls = hrefs + picture_links
-    clean_urls = list(set(
-        clean_url(url)
-        for url in urls
-        if url and url.strip() and url.lower().strip() != "no href"
-    ))
-    
-    parsed = urlparse(expositionUrl)
-    parts = parsed.path.strip("/").split("/")
-    base_id = parts[1] if len(parts) >= 2 and parts[0] == "view" else None
-    base_prefix = f"https://www.researchcatalogue.net/view/{base_id}/" if base_id else None
-    
+def categorize_urls(clean_urls, base_prefix=None):
     same_expo = []
     other_expo = []
     references = []
     external = []
-    
+
     for url in clean_urls:
         print(url)
+
         if is_media_url(url):
-            continue # this is a pdf, video or other object, not a real link
+            continue  # skip PDFs, videos, local files, etc.
+
         elif "reference" in url:
             references.append(url)
+
         elif base_prefix and url.startswith(base_prefix):
             same_expo.append(url)
+
         elif (
-            url.startswith("/profile/show-exposition?exposition=") or  # relative URL pattern
-            is_researchcatalogue_domain(url) or # any researchcatalogue.net domain
-            ("10.22501" in url)  # the RC DOI scope
+            url.startswith("/profile/show-exposition?exposition=")  # relative URL
+            or is_researchcatalogue_domain(url)                    # any RC domain
+            or "10.22501" in url                                   # RC DOI scope
         ):
             other_expo.append(url)
+
         else:
             external.append(url)
-    
+
     return {
         "same_exposition": same_expo,
         "other_expositions": other_expo,
         "references": references,
         "external": external,
     }
+
+def getLinks(expositionUrl, page):
+    container_div = page.find('div', id='container-weave')
+    atags = findHrefsInPage(container_div)  # extract all <a> tags
+    hrefs = [getHref(tag) for tag in atags]
+    picture_links = getDataFollowLinks(container_div)  # links in pictures
+    urls = hrefs + picture_links
+
+    clean_urls = list(set(
+        clean_url(url)
+        for url in urls
+        if url and url.strip() and url.lower().strip() != "no href"
+    ))
+
+    parsed = urlparse(expositionUrl)
+    parts = parsed.path.strip("/").split("/")
+    base_id = parts[1] if len(parts) >= 2 and parts[0] == "view" else None
+    base_prefix = f"https://www.researchcatalogue.net/view/{base_id}/" if base_id else None
+
+    return categorize_urls(clean_urls, base_prefix=base_prefix)
     
 def getPages(expositionUrl, page):
     atags = findHrefsInPage(page) #find all links in page
