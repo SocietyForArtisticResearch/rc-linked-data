@@ -142,7 +142,7 @@ def is_researchcatalogue_domain(url):
         return False
     
 def is_media_url(url):
-    "media.researchcatalogue.net" in url
+    return "media.researchcatalogue.net" in url
 
 def clean_url(href: str, base: str = RCURL) -> str:
     """Normalize and sanitize a URL so requests can handle it."""
@@ -181,6 +181,7 @@ def getLinks(expositionUrl, page):
     external = []
     
     for url in clean_urls:
+        print(url)
         if is_media_url(url):
             continue # this is a pdf, video or other object, not a real link
         elif "reference" in url:
