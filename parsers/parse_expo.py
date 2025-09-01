@@ -1,4 +1,5 @@
 from bs4 import BeautifulSoup
+from collections import defaultdict
 from expo import rc_soup_parsers as rcParsers
 from expo import rc_soup_pages as rcPages
 from media import extract_copyrights as mediaParser
@@ -84,6 +85,7 @@ def main(url, debug, download, shot, maps, force, session, **meta):
             pages = rcPages.getAllPages(url, parsed, meta_page_url, session)
             exp_dict["pages"] = {rcPages.getPageNumber(page): {} for page in pages}
             print(f"Found {len(pages)} pages.")
+            all_links = defaultdict(set)
 
             for index, page in enumerate(pages):
                 subpage = session.get(clean_url(page))
@@ -129,12 +131,14 @@ def main(url, debug, download, shot, maps, force, session, **meta):
                         toolsMetrics = None
                         screenshot = None
                         map_file = None
-                    
+                        
                 # all pages have id and type   
                 page_dict = {
                     "id": pageNumber, 
                     "type": pageType
                 }
+
+                exp_dict["pages"][pageNumber] = page_dict
                 
                 if screenshot:
                     page_dict["screenshot"] = screenshot
@@ -158,12 +162,20 @@ def main(url, debug, download, shot, maps, force, session, **meta):
                 if url:
                     page_dict["url"] = url
                     
+                if hrefs:
+                    for category, links in hrefs.items():
+                        all_links[category].update(links)  # merge 
+
+                if hrefs: # keep per-page hrefs
+                    page_dict["hyperlinks"] = hrefs
+                    
                 exp_dict["pages"][pageNumber] = page_dict
 
         except Exception as e:
             error = f"An error occurred: {e}. Traceback: {traceback.format_exc()}"
             print(error)
-            exp_dict["pages"] = error
+            exp_dict["error"] = error
+            exp_dict["pages"] = {}
         
         if copyrights and (not isinstance(exp_dict,(str,bytes))): 
             exp_dict["pages"] = insert_copyrights(copyrights, exp_dict["pages"], session, media_folder, download)
@@ -178,6 +190,8 @@ def main(url, debug, download, shot, maps, force, session, **meta):
                 exp_dict["meta"] = meta
             except:
                 print("Failed to parse meta page.")
+                
+        exp_dict["hyperlinks"] = {k: sorted(v) for k, v in all_links.items()}
                 
         exp_json = json.dumps(exp_dict, indent=2)
         with open(output_file_path, 'w') as outfile:
