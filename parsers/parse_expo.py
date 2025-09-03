@@ -17,6 +17,7 @@ import json
 import sys
 import os
 import shutil
+import re
 from urllib.parse import urlparse, urlunparse, unquote
 
 
@@ -184,6 +185,33 @@ def main(url, debug, download, shot, maps, force, session, research_folder="../r
     exp_dict["meta"] = meta
 
     exp_dict["hyperlinks"] = {k: sorted(v) for k, v in all_links.items()}
+    
+    # concatenate all tool-text and tool-simpletext
+    all_tool_text = []
+
+    for page_id, page_data in exp_dict.get("pages", {}).items():
+        tools = page_data.get("tools", {})
+
+        for tool_data in tools.get("tool-text", []):
+            src = tool_data.get("src")
+            if src:
+                all_tool_text.append(src.strip())
+
+        for tool_data in tools.get("tool-simpletext", []):
+            src = tool_data.get("src")
+            if src:
+                all_tool_text.append(src.strip())
+                
+    all_tool_text = " ".join(all_tool_text)
+
+    exp_dict["all_tools_text"] = all_tool_text
+    
+    # extract simple URLs from all_tool_text
+    url_pattern = r'(https?://[^\s]+|www\.[^\s]+)'
+    urls = re.findall(url_pattern, all_tool_text)
+    found_urls = [url.rstrip('.,)') for url in urls]
+    
+    exp_dict["hyperlinks"]["simpleurls"] = found_urls
                 
     with open(output_file_path, "w") as outfile:
         json.dump(exp_dict, outfile, indent=2)
