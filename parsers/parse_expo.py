@@ -204,7 +204,10 @@ def main(url, debug, download, shot, maps, force, session, research_folder="../r
                 
     all_tool_text = " ".join(all_tool_text)
 
-    exp_dict["all_tools_text"] = all_tool_text
+    exp_dict["text"] = {}
+    exp_dict["text"]["content"] = all_tool_text
+    exp_dict["text"]["charcount"] = len(all_tool_text)
+    exp_dict["text"]["wordcount"] = len(all_tool_text.split())    
     
     # extract simple URLs from all_tool_text
     url_pattern = r'(https?://[^\s]+|www\.[^\s]+)'
