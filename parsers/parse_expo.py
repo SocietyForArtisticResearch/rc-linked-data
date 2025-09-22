@@ -25,7 +25,7 @@ def clean_url(url):
 
     return cleaned_url
 
-def main(url, debug, download, shot, maps, force, session, **meta):
+def main(url, debug, download, shot, maps, force, session, username=None, password=None, **meta):
     num = rcPages.getExpositionId(url)
     research_folder = '../research/'
     output_folder = f"{research_folder}{num}/"
@@ -66,7 +66,19 @@ def main(url, debug, download, shot, maps, force, session, **meta):
     
     if "Authentication required" in parsed.get_text():
         print("Exposition with restricted visibility.")
-        return None
+        if username and password:
+            print("Attempting authentication with provided credentials...")
+            session = rc_session({'username': username, 'password': password})
+            expo = session.get(clean_url(url))
+            parsed = BeautifulSoup(expo.content, 'html.parser')
+            if "Authentication required" in parsed.get_text():
+                print("Authentication failed.")
+                return None
+            else:
+                print("Authentication successful.")
+        else:
+            print("No credentials provided for restricted exposition.")
+            return None
     
     if "You do not have permissions to access this research!" in parsed.get_text():
         print("Exposition not accessible.")
@@ -202,7 +214,7 @@ def main(url, debug, download, shot, maps, force, session, **meta):
 
 def print_usage():
     usage = """
-Usage: python3 parse_expo.py <url> <debug> <download> <shot> <maps> <force> [auth]
+Usage: python3 parse_expo.py <url> <debug> <download> <shot> <maps> <force> [auth|username password]
     
 Arguments:
     <url>       : Default page of the exposition to process.
@@ -212,16 +224,17 @@ Arguments:
     <maps>      : Generate visual maps (1 for enabled, 0 for disabled).
     <force>     : Always parse an exposition, even when it has been parsed before (1 for enabled, 0 for disabled).
     [auth]      : Optional. If provided, prompts for authentication.
+    [username password] : Optional. Provide username and password directly (alternative to auth).
 
 Examples:
     Without authentication (no force)
         python3 parse_expo.py "default-page" 0 1 0 0 0
 
-    With authentication:
+    With interactive authentication:
         python3 parse_expo.py "default-page" 0 1 0 0 0 auth
 
-    With authentication:
-        python3 parse_expo.py "default-page" 0 1 0 0 1 auth
+    With direct credentials:
+        python3 parse_expo.py "default-page" 0 1 0 0 1 user@example.com mypassword
 """
     print(usage)
 
@@ -247,9 +260,15 @@ if __name__ == "__main__":
         user = input("Email: ")
         password = getpass.getpass("Password: ")
         session = rc_session({'username': user, 'password': password})
+        main(url, debug, download, shot, maps, force, session)
+    elif len(sys.argv) > 8:
+        # Direct username and password provided
+        username = sys.argv[7]
+        password = sys.argv[8]
+        session = rc_session({'username': username, 'password': password})
+        main(url, debug, download, shot, maps, force, session)
     else:
         session = requests.Session()
         print("Proceeding without authentication.")
-
-    main(url, debug, download, shot, maps, force, session)
+        main(url, debug, download, shot, maps, force, session)
 
