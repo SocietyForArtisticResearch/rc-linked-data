@@ -27,7 +27,7 @@ def clean_url(url):
     return urlunparse(parsed_url._replace(path=clean_path.strip()))
 
 
-def main(url, debug, download, shot, maps, force, session, username=None, password=None, **meta):
+def main(url, debug, download, shot, maps, force, session=None, research_folder="../research/", username=None, password=None, **meta):
     num = rcPages.getExpositionId(url)
     output_folder = os.path.join(research_folder, f"{num}")
 
@@ -238,27 +238,32 @@ def main(url, debug, download, shot, maps, force, session, username=None, passwo
 
 def print_usage():
     usage = """
-Usage: python3 parse_expo.py <url> <debug> <download> <shot> <maps> <force> [auth|username password]
+Usage: python3 parse_expo.py <url> <debug> <download> <shot> <maps> <force> [options...]
     
-Arguments:
+Required Arguments:
     <url>       : Default page of the exposition to process.
     <debug>     : Debug mode (1 for enabled, 0 for disabled).
     <download>  : Download assets (1 for enabled, 0 for disabled).
     <shot>      : Take screenshots (1 for enabled, 0 for disabled).
     <maps>      : Generate visual maps (1 for enabled, 0 for disabled).
     <force>     : Always parse an exposition, even when it has been parsed before (1 for enabled, 0 for disabled).
-    [auth]      : Optional. If provided, prompts for authentication.
-    [username password] : Optional. Provide username and password directly (alternative to auth).
+
+Optional Arguments:
+    username password  : For RC authentication (both required together).
+    research_folder    : Path to research output folder (default: ../research/).
 
 Examples:
-    Without authentication (no force)
-        python3 parse_expo.py "default-page" 0 1 0 0 0
+    Basic usage (default research folder):
+        python3 parse_expo.py "https://www.researchcatalogue.net/view/1234/5678" 0 1 0 0 0
 
-    With interactive authentication:
-        python3 parse_expo.py "default-page" 0 1 0 0 0 auth
+    Custom research folder only:
+        python3 parse_expo.py "https://www.researchcatalogue.net/view/1234/5678" 0 1 0 0 0 "/path/to/research"
 
-    With direct credentials:
-        python3 parse_expo.py "default-page" 0 1 0 0 1 user@example.com mypassword
+    With authentication (default research folder):
+        python3 parse_expo.py "https://www.researchcatalogue.net/view/1234/5678" 0 1 0 0 1 "user@example.com" "password"
+        
+    With authentication and custom research folder:
+        python3 parse_expo.py "https://www.researchcatalogue.net/view/1234/5678" 0 1 0 0 1 "user@example.com" "password" "/path/to/research"
 """
     print(usage)
 
@@ -281,21 +286,37 @@ if __name__ == "__main__":
         print_usage()
         sys.exit(1)
 
+    # Parse optional arguments
+    username = None
+    password = None
     research_folder = "../research/"  # default
-
-    if len(sys.argv) > 7 and sys.argv[7] == "auth":
-        user = input("Email: ")
-        password = getpass.getpass("Password: ")
-        session = rc_session({'username': user, 'password': password})
-        main(url, debug, download, shot, maps, force, session)
-    elif len(sys.argv) > 8:
-        # Direct username and password provided
-        username = sys.argv[7]
-        password = sys.argv[8]
+    
+    # Parse arguments from position 7 onwards
+    remaining_args = sys.argv[7:]  # All arguments after the required 6
+    
+    if len(remaining_args) >= 2:
+        # Check if first two args look like username/password (contain @ for email)
+        if '@' in remaining_args[0]:
+            username = remaining_args[0]
+            password = remaining_args[1]
+            # Research folder might be the 3rd optional arg
+            if len(remaining_args) >= 3:
+                research_folder = remaining_args[2]
+        else:
+            # First arg doesn't look like email, assume it's research folder
+            research_folder = remaining_args[0]
+    elif len(remaining_args) == 1:
+        # Only one optional arg - assume it's research folder
+        research_folder = remaining_args[0]
+    
+    print(f"Using research folder: {research_folder}")
+    
+    if username and password:
+        print(f"Using provided credentials for user: {username}")
         session = rc_session({'username': username, 'password': password})
-        main(url, debug, download, shot, maps, force, session)
+        main(url, debug, download, shot, maps, force, session=session, research_folder=research_folder, username=username, password=password)
     else:
-        session = requests.Session()
         print("Proceeding without authentication.")
-        main(url, debug, download, shot, maps, force, session)
+        session = requests.Session()
+        main(url, debug, download, shot, maps, force, session=session, research_folder=research_folder)
 
