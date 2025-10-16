@@ -188,12 +188,13 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
         exp_dict["error"] = error
         exp_dict["pages"] = {}
 
-    if copyrights and not isinstance(exp_dict, (str, bytes)):
+    if copyrights and isinstance(exp_dict, dict):
         exp_dict["pages"] = insert_copyrights(
             copyrights, exp_dict["pages"], session, media_folder, download
         )
-    else:
-        print(f"exp_dict is not a string: {exp_dict}")
+    elif copyrights and isinstance(exp_dict, (str, bytes)):
+        print(f"ERROR: exp_dict is unexpectedly a string/bytes: {exp_dict}")
+    # If no copyrights, just continue without inserting them
 
     exp_dict["meta"] = meta
 
@@ -248,22 +249,24 @@ Required Arguments:
     <maps>      : Generate visual maps (1 for enabled, 0 for disabled).
     <force>     : Always parse an exposition, even when it has been parsed before (1 for enabled, 0 for disabled).
 
-Optional Arguments:
-    username password  : For RC authentication (both required together).
-    research_folder    : Path to research output folder (default: ../research/).
+Optional Arguments (Flag Style):
+    --username="email"       : Username for RC authentication.
+    --password="password"    : Password for RC authentication.
+    --research-folder="path" : Path to research output folder.
+
+Optional Arguments (Positional Style):
+    username password        : For RC authentication (both required together).
+    research_folder         : Path to research output folder.
 
 Examples:
-    Basic usage (default research folder):
+    Basic usage:
         python3 parse_expo.py "https://www.researchcatalogue.net/view/1234/5678" 0 1 0 0 0
 
-    Custom research folder only:
-        python3 parse_expo.py "https://www.researchcatalogue.net/view/1234/5678" 0 1 0 0 0 "/path/to/research"
+    With flags (recommended):
+        python3 parse_expo.py "URL" 0 1 0 0 1 --username="user@example.com" --password="password" --research-folder="/path"
 
-    With authentication (default research folder):
-        python3 parse_expo.py "https://www.researchcatalogue.net/view/1234/5678" 0 1 0 0 1 "user@example.com" "password"
-        
-    With authentication and custom research folder:
-        python3 parse_expo.py "https://www.researchcatalogue.net/view/1234/5678" 0 1 0 0 1 "user@example.com" "password" "/path/to/research"
+    With positional args:
+        python3 parse_expo.py "URL" 0 1 0 0 1 "user@example.com" "password" "/path/to/research"
 """
     print(usage)
 
@@ -294,20 +297,34 @@ if __name__ == "__main__":
     # Parse arguments from position 7 onwards
     remaining_args = sys.argv[7:]  # All arguments after the required 6
     
-    if len(remaining_args) >= 2:
+    # Handle both --flag=value and positional argument styles
+    positional_args = []
+    
+    for arg in remaining_args:
+        if arg.startswith('--username='):
+            username = arg.split('=', 1)[1].strip('"')
+        elif arg.startswith('--password='):
+            password = arg.split('=', 1)[1].strip('"')
+        elif arg.startswith('--research-folder='):
+            research_folder = arg.split('=', 1)[1].strip('"')
+        else:
+            positional_args.append(arg)
+    
+    # Handle remaining positional arguments if no flags were used
+    if not username and not password and len(positional_args) >= 2:
         # Check if first two args look like username/password (contain @ for email)
-        if '@' in remaining_args[0]:
-            username = remaining_args[0]
-            password = remaining_args[1]
-            # Research folder might be the 3rd optional arg
-            if len(remaining_args) >= 3:
-                research_folder = remaining_args[2]
+        if '@' in positional_args[0]:
+            username = positional_args[0]
+            password = positional_args[1]
+            # Research folder might be the 3rd positional arg
+            if len(positional_args) >= 3:
+                research_folder = positional_args[2]
         else:
             # First arg doesn't look like email, assume it's research folder
-            research_folder = remaining_args[0]
-    elif len(remaining_args) == 1:
-        # Only one optional arg - assume it's research folder
-        research_folder = remaining_args[0]
+            research_folder = positional_args[0]
+    elif research_folder == "../research/" and len(positional_args) == 1:
+        # Only one positional arg and research folder wasn't set by flag
+        research_folder = positional_args[0]
     
     print(f"Using research folder: {research_folder}")
     
