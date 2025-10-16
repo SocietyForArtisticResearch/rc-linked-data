@@ -9,6 +9,7 @@ from media.rc_merge_data import insert_copyrights
 from metrics.calc_metrics import calc_metrics
 from metrics.generate_tools_map import generate_tools_map
 from meta.parse_meta_page import parse_meta_page
+import datetime
 import traceback
 import getpass
 import requests
@@ -16,19 +17,20 @@ import json
 import sys
 import os
 import shutil
+import re
 from urllib.parse import urlparse, urlunparse, unquote
+
 
 def clean_url(url):
     parsed_url = urlparse(url)
     clean_path = unquote(parsed_url.path)
-    cleaned_url = urlunparse(parsed_url._replace(path=clean_path.strip()))
+    return urlunparse(parsed_url._replace(path=clean_path.strip()))
 
-    return cleaned_url
 
 def main(url, debug, download, shot, maps, force, session, username=None, password=None, **meta):
     num = rcPages.getExpositionId(url)
-    research_folder = '../research/'
-    output_folder = f"{research_folder}{num}/"
+    output_folder = os.path.join(research_folder, f"{num}")
+
     if force:
         print(f"Force flag enabled. Processing exposition at: {output_folder}")
         try:
@@ -40,30 +42,12 @@ def main(url, debug, download, shot, maps, force, session, username=None, passwo
             print(f"Permission denied: Unable to delete '{output_folder}'.")
         except Exception as e:
             print(f"An error occurred: {e}")
-    if os.path.exists(output_folder):
-        print(f"Exposition already parsed at: {output_folder}. Skipping.")
-        return
-    #copyrights_folder = output_folder + 'copyrights'
-    os.makedirs(output_folder, exist_ok=True)
-    output_file_path = os.path.join(output_folder, f'{num}.json')
-    if download:
-        media_folder = output_folder + 'media/'
-        os.makedirs(media_folder, exist_ok=True)
-    else:
-        media_folder = None
-    if shot:
-        screenshots_folder = output_folder + 'screenshots'
-        os.makedirs(screenshots_folder, exist_ok=True)
-    if maps:
-        maps_folder = output_folder + 'maps'
-        os.makedirs(maps_folder, exist_ok=True)
-    exp_dict = {"id": int(num), "url": url, "pages": {}}
-      
+
     print("Parsing exposition: " + url)
-    
     expo = session.get(clean_url(url))
     parsed = BeautifulSoup(expo.content, 'html.parser')
-    
+
+    # access restrictions
     if "Authentication required" in parsed.get_text():
         print("Exposition with restricted visibility.")
         if username and password:
@@ -83,134 +67,174 @@ def main(url, debug, download, shot, maps, force, session, username=None, passwo
     if "You do not have permissions to access this research!" in parsed.get_text():
         print("Exposition not accessible.")
         return None
-    
-    if rcPages.findMetaLink(parsed) == None:
-        print("Exposition does not exist.")
-        print("Deleting folder.")
-        shutil.rmtree(output_folder)
-        return None
-    
+
+    # metadata
+    if meta:
+        meta_page_url = meta["meta-data-page"]
+        modified = meta["last-modified"]
+        print(f"Last-modified at: {datetime.datetime.fromtimestamp(modified)}")
     else:
+        meta_page_url = rcPages.findMetaLink(parsed)
+        if meta_page_url is None:
+            print("Exposition does not exist.")
+            print("Deleting folder.")
+            shutil.rmtree(output_folder, ignore_errors=True)
+            return None
         try:
-            meta_page_url = rcPages.findMetaLink(parsed)
-            copyrights = mediaParser.extract_copyrights(meta_page_url, session)
-            pages = rcPages.getAllPages(url, parsed, meta_page_url, session)
-            exp_dict["pages"] = {rcPages.getPageNumber(page): {} for page in pages}
-            print(f"Found {len(pages)} pages.")
-            all_links = defaultdict(set)
+            meta = parse_meta_page(meta_page_url, session)
+            modified = meta["last-modified"]
+            print(f"Last-modified at: {datetime.datetime.fromtimestamp(modified)}")
+        except Exception:
+            print("Failed to parse meta page.")
+            return None
 
-            for index, page in enumerate(pages):
-                subpage = session.get(clean_url(page))
-                parsed = BeautifulSoup(subpage.content, 'html.parser')
-                #print(parsed)
-                
-                pageNumber = rcPages.getPageNumber(page)
-                pageType = rcPages.getPageType(parsed)
-                pageType = str(pageType[0])
-                print(f"Processing page {index+1}/{len(pages)}: {page}, {pageType}")
-                
-                match pageType:
-                    case "weave-graphical":
-                        toolsDict = rcParsers.parse_graphical(parsed, debug)
-                        toolsMetrics = calc_metrics(**toolsDict)
-                        hrefs = rcPages.getLinks(url, parsed)
-                        if maps:
-                            map_file = f"{maps_folder}/{pageNumber}.jpg"
-                            generate_tools_map(map_file, 800, 600, **toolsDict)
-                        if shot:
-                            screenshot = rcScreenshot.screenshotGraphical(clean_url(page), screenshots_folder, pageNumber)
-                        else:
-                            screenshot = None
-                    case "weave-block":
-                        toolsDict = rcParsers.parse_block(parsed, debug)
-                        toolsMetrics = None
-                        hrefs = rcPages.getLinks(url, parsed)
-                        map_file = None
-                        if shot:
-                            screenshot = rcScreenshot.screenshotBlock(clean_url(page), screenshots_folder, pageNumber)
-                        else:
-                            screenshot = None
-                    case "iframe":
-                        url = rcParsers.parse_iframe(parsed)
-                        toolsDict = None
-                        hrefs = None
-                        toolsMetrics = None
-                        screenshot = None
-                        map_file = None
-                    case _:
-                        toolsDict = None
-                        hrefs = None
-                        toolsMetrics = None
-                        screenshot = None
-                        map_file = None
-                        
-                # all pages have id and type   
-                page_dict = {
-                    "id": pageNumber, 
-                    "type": pageType
-                }
-
-                exp_dict["pages"][pageNumber] = page_dict
-                
-                if screenshot:
-                    page_dict["screenshot"] = screenshot
-                
-                # graphical and block pages have tools
-                if toolsDict:
-                    page_dict["tools"] = toolsDict
-                    exp_dict["copyrights"] = copyrights
-                
-                # graphical pages have metrics and maps
-                if toolsMetrics:
-                    page_dict["metrics"] = toolsMetrics
-                    
-                if hrefs:
-                    page_dict["hyperlinks"] = hrefs
-                
-                if maps:
-                    page_dict["map"] = map_file
-                   
-                # iframe 
-                if url:
-                    page_dict["url"] = url
-                    
-                if hrefs:
-                    for category, links in hrefs.items():
-                        all_links[category].update(links)  # merge 
-
-                if hrefs: # keep per-page hrefs
-                    page_dict["hyperlinks"] = hrefs
-                    
-                exp_dict["pages"][pageNumber] = page_dict
-
-        except Exception as e:
-            error = f"An error occurred: {e}. Traceback: {traceback.format_exc()}"
-            print(error)
-            exp_dict["error"] = error
-            exp_dict["pages"] = {}
-        
-        if copyrights and (not isinstance(exp_dict,(str,bytes))): 
-            exp_dict["pages"] = insert_copyrights(copyrights, exp_dict["pages"], session, media_folder, download)
+    # check if local copy exists
+    if os.path.exists(output_folder):
+        local_timestamp = os.path.getmtime(output_folder)
+        print(f"Local folder timestamp: {datetime.datetime.fromtimestamp(local_timestamp)}")
+        if modified + 86400 > local_timestamp:  # add one day tolerance
+            print(f"Exposition already parsed, but maybe outdated. Reparsing at: {output_folder}.")
+            shutil.rmtree(output_folder)
         else:
-            print(f"exp_dict is not a string: ${exp_dict}")
-            
-        if meta:
-            exp_dict["meta"] = meta
+            print(f"Exposition already parsed at: {output_folder}. Skipping.")
+            return
+
+    # parse
+    try:
+        os.makedirs(output_folder, exist_ok=True)
+        output_file_path = os.path.join(output_folder, f"{num}.json")
+
+        media_folder = os.path.join(output_folder, "media")
+        if download:
+            # ensure trailing slash
+            media_folder = media_folder + os.sep  
+            os.makedirs(media_folder, exist_ok=True)
         else:
-            try:
-                meta = parse_meta_page(meta_page_url, session)
-                exp_dict["meta"] = meta
-            except:
-                print("Failed to parse meta page.")
+            media_folder = None
+
+        screenshots_folder = os.path.join(output_folder, "screenshots") if shot else None
+        if screenshots_folder:
+            os.makedirs(screenshots_folder, exist_ok=True)
+
+        maps_folder = os.path.join(output_folder, "maps") if maps else None
+        if maps_folder:
+            os.makedirs(maps_folder, exist_ok=True)
+
+        exp_dict = {"id": int(num), "url": url, "pages": {}}
+        copyrights = mediaParser.extract_copyrights(meta_page_url, session)
+        pages = rcPages.getAllPages(url, parsed, meta_page_url, session)
+        exp_dict["pages"] = {rcPages.getPageNumber(page): {} for page in pages}
+        print(f"Found {len(pages)} pages.")
+        all_links = defaultdict(set)
+
+        for index, page in enumerate(pages):
+            subpage = session.get(clean_url(page))
+            parsed = BeautifulSoup(subpage.content, "html.parser")
+
+            pageNumber = rcPages.getPageNumber(page)
+            pageType = str(rcPages.getPageType(parsed)[0])
+            print(f"Processing page {index+1}/{len(pages)}: {page}, {pageType}")
+
+            toolsDict = None
+            toolsMetrics = None
+            hrefs = None
+            screenshot = None
+            map_file = None
+            iframe_url = None
+
+            match pageType:
+                case "weave-graphical":
+                    toolsDict = rcParsers.parse_graphical(parsed, debug)
+                    toolsMetrics = calc_metrics(**toolsDict)
+                    hrefs = rcPages.getLinks(url, parsed)
+                    if maps_folder:
+                        map_file = os.path.join(maps_folder, f"{pageNumber}.jpg")
+                        generate_tools_map(map_file, 800, 600, **toolsDict)
+                    if screenshots_folder:
+                        screenshot = rcScreenshot.screenshotGraphical(clean_url(page), screenshots_folder, pageNumber)
+
+                case "weave-block":
+                    toolsDict = rcParsers.parse_block(parsed, debug)
+                    hrefs = rcPages.getLinks(url, parsed)
+                    if screenshots_folder:
+                        screenshot = rcScreenshot.screenshotBlock(clean_url(page), screenshots_folder, pageNumber)
+
+                case "iframe":
+                    iframe_url = rcParsers.parse_iframe(parsed)
+
+            page_dict = {"id": pageNumber, "type": pageType}
+            if screenshot:
+                page_dict["screenshot"] = screenshot
+            if toolsDict:
+                page_dict["tools"] = toolsDict
+                exp_dict["copyrights"] = copyrights
+            if toolsMetrics:
+                page_dict["metrics"] = toolsMetrics
+            if hrefs:
+                page_dict["hyperlinks"] = hrefs
+            if hrefs:
+                for category, links in hrefs.items():
+                    all_links[category].update(links)
+            if map_file:
+                page_dict["map"] = map_file
+            if iframe_url:
+                page_dict["url"] = iframe_url
+
+            exp_dict["pages"][pageNumber] = page_dict
+
+    except Exception as e:
+        error = f"An error occurred: {e}. Traceback: {traceback.format_exc()}"
+        print(error)
+        exp_dict["error"] = error
+        exp_dict["pages"] = {}
+
+    if copyrights and not isinstance(exp_dict, (str, bytes)):
+        exp_dict["pages"] = insert_copyrights(
+            copyrights, exp_dict["pages"], session, media_folder, download
+        )
+    else:
+        print(f"exp_dict is not a string: {exp_dict}")
+
+    exp_dict["meta"] = meta
+
+    exp_dict["hyperlinks"] = {k: sorted(v) for k, v in all_links.items()}
+    
+    # concatenate all tool-text and tool-simpletext
+    all_tool_text = []
+
+    for page_id, page_data in exp_dict.get("pages", {}).items():
+        tools = page_data.get("tools", {})
+
+        for tool_data in tools.get("tool-text", []):
+            src = tool_data.get("src")
+            if src:
+                all_tool_text.append(src.strip())
+
+        for tool_data in tools.get("tool-simpletext", []):
+            src = tool_data.get("src")
+            if src:
+                all_tool_text.append(src.strip())
                 
-        exp_dict["hyperlinks"] = {k: sorted(v) for k, v in all_links.items()}
+    all_tool_text = " ".join(all_tool_text)
+
+    exp_dict["text"] = {}
+    exp_dict["text"]["content"] = all_tool_text
+    exp_dict["text"]["charcount"] = len(all_tool_text)
+    exp_dict["text"]["wordcount"] = len(all_tool_text.split())    
+    
+    # extract simple URLs from all_tool_text
+    url_pattern = r'(https?://[^\s]+|www\.[^\s]+)'
+    urls = re.findall(url_pattern, all_tool_text)
+    found_urls = [url.rstrip('.,)') for url in urls]
+    
+    exp_dict["hyperlinks"]["simpleurls"] = found_urls
                 
-        exp_json = json.dumps(exp_dict, indent=2)
-        with open(output_file_path, 'w') as outfile:
-            outfile.write(exp_json)
-            print("Done.")
-            
-        return exp_dict
+    with open(output_file_path, "w") as outfile:
+        json.dump(exp_dict, outfile, indent=2)
+        print("Done.")
+
+    return exp_dict
+
 
 def print_usage():
     usage = """
@@ -238,8 +262,9 @@ Examples:
 """
     print(usage)
 
+
 if __name__ == "__main__":
-    if len(sys.argv) < 6:
+    if len(sys.argv) < 7:
         print("Error: Missing required arguments.")
         print_usage()
         sys.exit(1)
@@ -252,9 +277,11 @@ if __name__ == "__main__":
         maps = int(sys.argv[5])
         force = int(sys.argv[6])
     except ValueError:
-        print("Error: debug, download, and shot must be integers (1 or 0).")
+        print("Error: debug, download, shot, maps, force must be integers (1 or 0).")
         print_usage()
         sys.exit(1)
+
+    research_folder = "../research/"  # default
 
     if len(sys.argv) > 7 and sys.argv[7] == "auth":
         user = input("Email: ")
