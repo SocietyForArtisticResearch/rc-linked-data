@@ -27,7 +27,7 @@ def clean_url(url):
     return urlunparse(parsed_url._replace(path=clean_path.strip()))
 
 
-def main(url, debug, download, shot, maps, force, session, research_folder="../research/", **meta):
+def main(url, debug, download, shot, maps, force, session, username=None, password=None, **meta):
     num = rcPages.getExpositionId(url)
     output_folder = os.path.join(research_folder, f"{num}")
 
@@ -50,7 +50,20 @@ def main(url, debug, download, shot, maps, force, session, research_folder="../r
     # access restrictions
     if "Authentication required" in parsed.get_text():
         print("Exposition with restricted visibility.")
-        return None
+        if username and password:
+            print("Attempting authentication with provided credentials...")
+            session = rc_session({'username': username, 'password': password})
+            expo = session.get(clean_url(url))
+            parsed = BeautifulSoup(expo.content, 'html.parser')
+            if "Authentication required" in parsed.get_text():
+                print("Authentication failed.")
+                return None
+            else:
+                print("Authentication successful.")
+        else:
+            print("No credentials provided for restricted exposition.")
+            return None
+    
     if "You do not have permissions to access this research!" in parsed.get_text():
         print("Exposition not accessible.")
         return None
@@ -225,17 +238,27 @@ def main(url, debug, download, shot, maps, force, session, research_folder="../r
 
 def print_usage():
     usage = """
-Usage: python3 parse_expo.py <url> <debug> <download> <shot> <maps> <force> [auth] [research_folder]
-
+Usage: python3 parse_expo.py <url> <debug> <download> <shot> <maps> <force> [auth|username password]
+    
 Arguments:
-    <url>             : Default page of the exposition to process.
-    <debug>           : Debug mode (1 or 0).
-    <download>        : Download assets (1 or 0).
-    <shot>            : Take screenshots (1 or 0).
-    <maps>            : Generate visual maps (1 or 0).
-    <force>           : Always parse exposition, even if already parsed (1 or 0).
-    [auth]            : Optional. If provided, prompts for authentication.
-    [research_folder] : Optional. Path to research output folder (default: ../research/)
+    <url>       : Default page of the exposition to process.
+    <debug>     : Debug mode (1 for enabled, 0 for disabled).
+    <download>  : Download assets (1 for enabled, 0 for disabled).
+    <shot>      : Take screenshots (1 for enabled, 0 for disabled).
+    <maps>      : Generate visual maps (1 for enabled, 0 for disabled).
+    <force>     : Always parse an exposition, even when it has been parsed before (1 for enabled, 0 for disabled).
+    [auth]      : Optional. If provided, prompts for authentication.
+    [username password] : Optional. Provide username and password directly (alternative to auth).
+
+Examples:
+    Without authentication (no force)
+        python3 parse_expo.py "default-page" 0 1 0 0 0
+
+    With interactive authentication:
+        python3 parse_expo.py "default-page" 0 1 0 0 0 auth
+
+    With direct credentials:
+        python3 parse_expo.py "default-page" 0 1 0 0 1 user@example.com mypassword
 """
     print(usage)
 
@@ -263,13 +286,16 @@ if __name__ == "__main__":
     if len(sys.argv) > 7 and sys.argv[7] == "auth":
         user = input("Email: ")
         password = getpass.getpass("Password: ")
-        session = rc_session({"username": user, "password": password})
-        if len(sys.argv) > 8:
-            research_folder = sys.argv[8]
+        session = rc_session({'username': user, 'password': password})
+        main(url, debug, download, shot, maps, force, session)
+    elif len(sys.argv) > 8:
+        # Direct username and password provided
+        username = sys.argv[7]
+        password = sys.argv[8]
+        session = rc_session({'username': username, 'password': password})
+        main(url, debug, download, shot, maps, force, session)
     else:
         session = requests.Session()
         print("Proceeding without authentication.")
-        if len(sys.argv) > 7:
-            research_folder = sys.argv[7]
+        main(url, debug, download, shot, maps, force, session)
 
-    main(url, debug, download, shot, maps, force, session, research_folder=research_folder)
