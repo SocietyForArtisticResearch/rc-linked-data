@@ -157,19 +157,34 @@ def getPdfSrc(content):
 # ------------------------------
 # Base + specific attributes
 # ------------------------------
+def safe_get(func, tool, default=None):
+    try:
+        return func(tool)
+    except Exception as e:
+        print(f"{func.__name__} failed: {e}")
+        return default
+
+
 def getBaseAttributes(tool, extra=None):
-    content = getContent(tool)
+    style = safe_get(getStyle, tool, "")
+
     base = {
-        "id": getId(tool),
-        "style": getStyle(tool),
-        "dimensions": getStyleAttributes(getStyle(tool)),
-        "content": str(content),
+        "id": safe_get(getId, tool),
+        "style": style,
+        "dimensions": safe_get(lambda t: getStyleAttributes(style), tool, {}),
+        "content": safe_get(getContent, tool, ""),
         "tool": str(tool),
-        "last-modified-by": getAuthor(tool),
-        "last-modified-at": getDate(tool),
+        "last-modified-by": safe_get(getAuthor, tool),
+        "last-modified-at": safe_get(getDate, tool),
     }
+
+    # Convert content to string if it exists
+    if base["content"] is not None:
+        base["content"] = str(base["content"])
+
     if extra:
         base.update(extra)
+
     return base
 
 def getPdfAttributes(tool):
@@ -196,8 +211,12 @@ def getTextAttributes(tool):
     return getBaseAttributes(tool, {"src": removeStyle(str(content))})
 
 def getSimpleTextAttributes(tool):
+    print(f"getToolAttributes called with: {tool}")
     content = getContent(tool)
-    return getBaseAttributes(tool, {"src": removeStyle(str(content))})
+    print(f"Extracted content: {content}")
+    arttributes = getBaseAttributes(tool, {"src": removeStyle(str(content))})
+    print(f"Extracted attributes: {arttributes}")
+    return arttributes
 
 def getToolAttributes(tool):
     return getBaseAttributes(tool)
@@ -223,8 +242,11 @@ TOOL_DISPATCH = {
 def getTexts(driver, which, debug=False):
     try:
         texts = driver.find_all(class_=which)
+        print(f"getTexts found {len(texts)} elements of type '{which}'")
         fn = TOOL_DISPATCH.get(which, getToolAttributes)
+        print(f"Using function: {fn.__name__} for type '{which}'")
         attributes = list(map(fn, texts))
+        print(f"Extracted attributes for {len(attributes)} elements of type '{which}'")
     except Exception:
         if debug: print(f"found 0 {which}")
         return []
@@ -254,10 +276,14 @@ def getBlockTools(page, which, debug=False):
     all_attributes = []
 
     for row_index, row in enumerate(rows):
+        #print(f"Processing row {row_index + 1}/{len(rows)}")
         try:
             tools = row.find_all(class_=which)
+            #print(f"  Found {len(tools)} tools of type '{which}' in this row.")
             fn = TOOL_DISPATCH.get(which, getToolAttributes)
+            #print(f"  Using function: {fn.__name__}")
             attributes = list(map(fn, tools))
+            #print(f"  Extracted attributes for {len(attributes)} tools.")
             attributes = process_tool_cells(attributes, tools, row_index)
             all_attributes.extend(attributes)
         except Exception as e:
