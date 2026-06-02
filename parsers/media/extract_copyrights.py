@@ -14,14 +14,15 @@ def extract_copyrights(url, session):
     # faster, but doesn't correct missing closing tags
     #soup = BeautifulSoup(raw_html, 'html.parser')
 
-    parsed_url = urlparse(url)
-    exposition_id = parse_qs(parsed_url.query).get('exposition', [None])[0]
+    # Extract exposition ID - the last integer in the URL
+    import re
+    url_numbers = re.findall(r'\d+', url)
+    exposition_id = url_numbers[-1] if url_numbers else None
     if not exposition_id:
-        print("No 'exposition' parameter found in the URL.")
+        print("No exposition ID found in the URL.")
         return
 
-    #os.makedirs(output_folder, exist_ok=True)
-    #output_file_path = os.path.join(output_folder, f'{exposition_id}.json')
+    print(f"Extracted exposition_id: {exposition_id}")
 
     # Find the "Copyrights" section and extract the simple-media entries
     simple_media_copyrights = []
@@ -49,6 +50,9 @@ def extract_copyrights(url, session):
                     media_data[key] = value
 
                 simple_media_copyrights.append(media_data)
+
+    print(f"Extracted copyrights: {len(simple_media_copyrights)} items")
+    print(json.dumps(simple_media_copyrights, indent=2))
 
     #with open(output_file_path, 'w') as json_file:
     #    json.dump(simple_media_copyrights, json_file, indent=4)

@@ -52,7 +52,7 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
         print("Exposition with restricted visibility.")
         if username and password:
             print("Attempting authentication with provided credentials...")
-            session = rc_session({'username': username, 'password': password})
+            session = rc_session(username, password)
             expo = session.get(clean_url(url))
             parsed = BeautifulSoup(expo.content, 'html.parser')
             if "Authentication required" in parsed.get_text():
@@ -81,6 +81,7 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
             shutil.rmtree(output_folder, ignore_errors=True)
             return None
         try:
+            print(meta_page_url)
             meta = parse_meta_page(meta_page_url, session)
             modified = meta["last-modified"]
             print(f"Last-modified at: {datetime.datetime.fromtimestamp(modified)}")
@@ -330,7 +331,7 @@ if __name__ == "__main__":
     
     if username and password:
         print(f"Using provided credentials for user: {username}")
-        session = rc_session({'username': username, 'password': password})
+        session = rc_session(username, password)
         main(url, debug, download, shot, maps, force, session=session, research_folder=research_folder, username=username, password=password)
     else:
         print("Proceeding without authentication.")

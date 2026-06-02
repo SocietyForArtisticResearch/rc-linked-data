@@ -32,6 +32,7 @@ def getPageId(fullUrl):
     return fullUrl.split("/")[5]
 
 def getPageNumber(url):
+    print(url)
     page = url.split("/")[5].split("#")[0]
     page_number = ''.join(filter(str.isdigit, page))
     if not page_number:
@@ -40,11 +41,8 @@ def getPageNumber(url):
     return int(page_number)
 
 def isRelative(href):
-    parts = href.split("/")
-    if parts[1] == 'view':
-        return True
-    else:
-        return False
+    # Check if URL is relative (starts with /)
+    return href.startswith('/')
 
 def getHref(atag):
     try:
@@ -68,6 +66,9 @@ def findMetaLink(parsed):
         a_tag = li_tag.find('a')  # Find <a> tag inside the <li>
         if a_tag:
             href = a_tag.get('href')
+            # Convert relative URLs to absolute
+            if isRelative(href):
+                href = RCURL + href
         else:
             print("Metapage: no <a> tag found.")
             href = None
@@ -98,10 +99,21 @@ def notAnchorAtOrigin(url):
         return True
     
 def isSubPage(expositionUrl, url):
+    """Check if url is a subpage of expositionUrl by comparing exposition IDs"""
     try:
-        expID = getExpositionId(expositionUrl)
-        pageID = getExpositionId(url)
-        if expID == pageID:
+        import re
+        
+        # Extract exposition ID from pattern: https://www.researchcatalogue.net/view/ID/...
+        def extract_exposition_id(full_url):
+            match = re.search(r'/view/(\d+)', full_url)
+            if match:
+                return match.group(1)
+            return None
+        
+        expID = extract_exposition_id(expositionUrl)
+        pageID = extract_exposition_id(url)
+        
+        if expID and pageID and expID == pageID:
             return True
         else:
             return False
@@ -111,6 +123,8 @@ def isSubPage(expositionUrl, url):
 def getDataFollowLinks(page):
     pix = page.find_all('div', class_='tool-picture')
     links = list(map(lambda div: div.get('data-follow-link'), pix))
+    # Convert relative URLs to absolute
+    links = [RCURL + link if isRelative(link) else link for link in links if link]
     return links
 
 whitelist = ["doi.org", "dx.doi.org"]
