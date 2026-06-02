@@ -62,7 +62,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 7 and sys.argv[7] == "auth":
         user = input("Email: ")
         password = getpass.getpass("Password: ")
-        session = rc_session({'username': user, 'password': password})
+        session = rc_session(user, password)
         if len(sys.argv) > 8:
             research_folder = sys.argv[8]
             lookup_arg_index = 9
