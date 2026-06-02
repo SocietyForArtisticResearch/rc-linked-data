@@ -1,6 +1,6 @@
 import requests
 
-login_url = "https://www.researchcatalogue.net/session/login"
+login_url = "https://www.researchcatalogue.net/auth/login"
 
 def rc_session(login):
     session = requests.Session()
