@@ -90,7 +90,8 @@ def parse_meta_page(url, session):
         temp["author"] = None
         temp["coauthors"] = []
             
-    img_tag = meta_page.find('img', class_='research-image')
+    img_tag = meta_page.find('div', class_='meta-media-preview')
+    img_tag = img_tag.find('img') if img_tag else None
     print(f"img_tag found: {img_tag is not None}")
     thumb = img_tag.get('src') if img_tag else None
     temp["thumb"] = thumb
