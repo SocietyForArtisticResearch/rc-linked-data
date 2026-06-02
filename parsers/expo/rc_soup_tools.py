@@ -2,6 +2,10 @@
 from bs4 import BeautifulSoup
 from datetime import datetime
 from typing import Optional
+import re
+
+# Media URL patterns
+MEDIA_BASE_URL = "https://media.researchcatalogue.net"
 
 # ------------------------------
 # Tool categories
@@ -20,6 +24,47 @@ TOOLS = [
 TEXTTOOLS = ["tool-text", "tool-simpletext"]
 
 ALLTOOLS = TEXTTOOLS + TOOLS
+
+
+def convert_media_url(url: str) -> str:
+    """
+    Convert RC media URLs from /resources/generate format to the actual cache format.
+    
+    Example:
+        /resources/generate/35b87a4a3245bf226642e5ea25565179/199/159?_expiration=...&_hash=...
+        becomes:
+        https://media.researchcatalogue.net/rc/cache/35/b8/7a/4a/35b87a4a3245bf226642e5ea25565179_199x159.png?_expiration=...&_hash=...
+    """
+    if not url:
+        return url
+    
+    # Check if it's already a full absolute URL
+    if url.startswith("http://") or url.startswith("https://"):
+        return url
+    
+    # Match the /resources/generate/ pattern
+    pattern = r'/resources/generate/([a-f0-9]+)/(\d+)/(\d+)(\?.*)?'
+    match = re.match(pattern, url)
+    
+    if match:
+        hash_value = match.group(1)
+        width = match.group(2)
+        height = match.group(3)
+        query_string = match.group(4) or ""
+        
+        # Split hash into subdirectory parts (2 chars each for first 3 parts, rest is full hash)
+        hash_parts = [hash_value[i:i+2] for i in range(0, 8, 2)]  # First 8 chars = 4 parts of 2 chars
+        cache_path = "/".join(hash_parts)
+        
+        # Construct the media cache URL
+        converted_url = f"{MEDIA_BASE_URL}/rc/cache/{cache_path}/{hash_value}_{width}x{height}.png{query_string}"
+        return converted_url
+    
+    # If it doesn't match the pattern, return as-is (might be a relative or absolute URL already)
+    if url.startswith("/"):
+        return f"https://www.researchcatalogue.net{url}"
+    
+    return url
 
 
 # ------------------------------
