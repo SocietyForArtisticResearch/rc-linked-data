@@ -9,10 +9,13 @@ def extract_copyrights(url, session):
     response = session.get(url)
     raw_html = response.text
     
-    # use html5lib parser to correct table tags in simple-media
-    soup = BeautifulSoup(raw_html, 'html5lib')
-    # faster, but doesn't correct missing closing tags
-    #soup = BeautifulSoup(raw_html, 'html.parser')
+    # Try html5lib first (better for correcting table tags), fall back to html.parser
+    try:
+        soup = BeautifulSoup(raw_html, 'html5lib')
+        print("HTML parsed with html5lib")
+    except Exception as e:
+        print(f"html5lib parser not available: {e}, using html.parser instead")
+        soup = BeautifulSoup(raw_html, 'html.parser')
 
     # Extract exposition ID - the last integer in the URL
     import re

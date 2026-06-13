@@ -8,8 +8,28 @@ def parse_meta_page(url, session):
     print("Parsing meta page: " + url)
     meta = session.get(url)
     print(f"Response status: {meta.status_code}")
-    meta_page = BeautifulSoup(meta.content, 'html5lib')
-    print("HTML parsed successfully")
+    print(f"Content length: {len(meta.content)} bytes")
+    
+    if meta.status_code != 200:
+        print(f"ERROR: Received status code {meta.status_code}")
+        return None
+    
+    if not meta.content:
+        print("ERROR: Response content is empty")
+        return None
+    
+    try:
+        meta_page = BeautifulSoup(meta.content, 'html.parser')
+        print("HTML parsed successfully with html.parser")
+    except Exception as e:
+        print(f"ERROR parsing HTML with html.parser: {e}")
+        print(f"Attempting fallback with html5lib...")
+        try:
+            meta_page = BeautifulSoup(meta.content, 'html5lib')
+            print("HTML parsed successfully with html5lib")
+        except Exception as e2:
+            print(f"ERROR: Failed to parse HTML with both parsers: {e2}")
+            return None
     
     meta_section = meta_page.find('div', class_='meta-right-col')
     print(f"meta_section found: {meta_section is not None}")
