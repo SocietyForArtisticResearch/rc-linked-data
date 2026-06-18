@@ -3,8 +3,9 @@ cd /home/casper/devel/rc-linked-data/parsers || exit 1
 source venv/bin/activate
 
 # Define the script to run
+# 0 0 0 1 0 0 means only make map
 SCRIPT=("parse_rc.py" 0 0 0 1 0 0)
-#python3 parse_rc.py <debug> <download> <shot> <map> <force> <resume> [auth] [lookup]
+#python3 parse_rc.py <debug> <download> <screenshot> <map> <force> <resume> [auth] [lookup]
     
 # Run the script in the background
 python3 "${SCRIPT[@]}" &
@@ -21,7 +22,7 @@ cpulimit -l 200 -p $PID &
 # Wait for the script to finish
 wait $PID
 
-source deactivate
+
 
 
 
