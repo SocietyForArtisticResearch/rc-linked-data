@@ -77,13 +77,21 @@ def getStyle(tool):
     return tool["style"]
 
 def getStyleAttributes(style: str):
-    """Parses inline style like 'top:10px; left:20px; width:30px; height:40px;'"""
-    attributes = []
-    attrs = style.split("px;")
-    for x in range(4):
-        attr = attrs[x].split(":")
-        attributes.append(int(attr[1]))
-    return attributes
+    """Parses top, left, width, height from an inline style string."""
+    result = {}
+    for prop in style.split(";"):
+        prop = prop.strip()
+        if ":" not in prop:
+            continue
+        key, value = prop.split(":", 1)
+        key = key.strip().lower()
+        if key in ("top", "left", "width", "height"):
+            value = value.strip().replace("px", "")
+            try:
+                result[key] = int(value)
+            except ValueError:
+                pass
+    return [result.get(k, 0) for k in ("top", "left", "width", "height")]
 
 def getContent(tool):
     return tool.find("div", {"class": "tool-content"})
