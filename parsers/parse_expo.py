@@ -160,7 +160,7 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
                         map_file = os.path.join(maps_folder, f"{pageNumber}.jpg")
                         generate_tools_map(map_file, 800, 600, **toolsDict)
                     if screenshots_base:
-                        weave_folder = os.path.join(screenshots_base, pageNumber)
+                        weave_folder = os.path.join(screenshots_base, str(pageNumber))
                         os.makedirs(weave_folder, exist_ok=True)
                         screenshot = rcScreenshot.screenshotGraphical(clean_url(page), weave_folder, 1)
 
@@ -168,7 +168,7 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
                     toolsDict = rcParsers.parse_block(parsed, debug)
                     hrefs = rcPages.getLinks(url, parsed)
                     if screenshots_base:
-                        weave_folder = os.path.join(screenshots_base, pageNumber)
+                        weave_folder = os.path.join(screenshots_base, str(pageNumber))
                         os.makedirs(weave_folder, exist_ok=True)
                         screenshot = rcScreenshot.screenshotBlock(clean_url(page), weave_folder, 1)
 
