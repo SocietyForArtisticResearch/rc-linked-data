@@ -14,7 +14,6 @@ import traceback
 import getpass
 import requests
 import json
-import sys
 import os
 import shutil
 import re
@@ -27,7 +26,7 @@ def clean_url(url):
     return urlunparse(parsed_url._replace(path=clean_path.strip()))
 
 
-def main(url, debug, download, shot, maps, force, session=None, research_folder="../research/", username=None, password=None, **meta):
+def main(url, debug, download, shot, maps, force, session=None, research_folder="../research/", username=None, password=None, screenshots_root=None, **meta):
     num = rcPages.getExpositionId(url)
     output_folder = os.path.join(research_folder, f"{num}")
 
@@ -118,9 +117,13 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
         else:
             media_folder = None
 
-        screenshots_folder = os.path.join(output_folder, "screenshots") if shot else None
-        if screenshots_folder:
-            os.makedirs(screenshots_folder, exist_ok=True)
+        screenshots_base = None
+        if shot:
+            if screenshots_root:
+                screenshots_base = os.path.join(screenshots_root, num)
+            else:
+                screenshots_base = os.path.join(output_folder, "screenshots")
+            os.makedirs(screenshots_base, exist_ok=True)
 
         maps_folder = os.path.join(output_folder, "maps") if maps else None
         if maps_folder:
@@ -156,14 +159,18 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
                     if maps_folder:
                         map_file = os.path.join(maps_folder, f"{pageNumber}.jpg")
                         generate_tools_map(map_file, 800, 600, **toolsDict)
-                    if screenshots_folder:
-                        screenshot = rcScreenshot.screenshotGraphical(clean_url(page), screenshots_folder, pageNumber)
+                    if screenshots_base:
+                        weave_folder = os.path.join(screenshots_base, pageNumber)
+                        os.makedirs(weave_folder, exist_ok=True)
+                        screenshot = rcScreenshot.screenshotGraphical(clean_url(page), weave_folder, 1)
 
                 case "weave-block":
                     toolsDict = rcParsers.parse_block(parsed, debug)
                     hrefs = rcPages.getLinks(url, parsed)
-                    if screenshots_folder:
-                        screenshot = rcScreenshot.screenshotBlock(clean_url(page), screenshots_folder, pageNumber)
+                    if screenshots_base:
+                        weave_folder = os.path.join(screenshots_base, pageNumber)
+                        os.makedirs(weave_folder, exist_ok=True)
+                        screenshot = rcScreenshot.screenshotBlock(clean_url(page), weave_folder, 1)
 
                 case "iframe":
                     iframe_url = rcParsers.parse_iframe(parsed)
@@ -243,101 +250,29 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
     return exp_dict
 
 
-def print_usage():
-    usage = """
-Usage: python3 parse_expo.py <url> <debug> <download> <shot> <maps> <force> [options...]
-    
-Required Arguments:
-    <url>       : Default page of the exposition to process.
-    <debug>     : Debug mode (1 for enabled, 0 for disabled).
-    <download>  : Download assets (1 for enabled, 0 for disabled).
-    <shot>      : Take screenshots (1 for enabled, 0 for disabled).
-    <maps>      : Generate visual maps (1 for enabled, 0 for disabled).
-    <force>     : Always parse an exposition, even when it has been parsed before (1 for enabled, 0 for disabled).
-
-Optional Arguments (Flag Style):
-    --username="email"       : Username for RC authentication.
-    --password="password"    : Password for RC authentication.
-    --research-folder="path" : Path to research output folder.
-
-Optional Arguments (Positional Style):
-    username password        : For RC authentication (both required together).
-    research_folder         : Path to research output folder.
-
-Examples:
-    Basic usage:
-        python3 parse_expo.py "https://www.researchcatalogue.net/view/1234/5678" 0 1 0 0 0
-
-    With flags (recommended):
-        python3 parse_expo.py "URL" 0 1 0 0 1 --username="user@example.com" --password="password" --research-folder="/path"
-
-    With positional args:
-        python3 parse_expo.py "URL" 0 1 0 0 1 "user@example.com" "password" "/path/to/research"
-"""
-    print(usage)
+def build_parser():
+    parser = argparse.ArgumentParser(description="Parse a single Research Catalogue exposition.")
+    parser.add_argument("url", help="Default page URL of the exposition to process.")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode.")
+    parser.add_argument("--download", action="store_true", help="Download media assets.")
+    parser.add_argument("--shot", action="store_true", help="Take screenshots of weaves.")
+    parser.add_argument("--maps", action="store_true", help="Generate visual tool maps.")
+    parser.add_argument("--force", action="store_true", help="Re-parse even if already parsed.")
+    parser.add_argument("--username", default=None, help="Email for RC authentication.")
+    parser.add_argument("--password", default=None, help="Password for RC authentication.")
+    parser.add_argument("--research-folder", default="../research/", help="Path to research output folder (default: ../research/).")
+    parser.add_argument("--screenshots-root", default=None, help="Root path for screenshots, stored as root/expo_id/weave_id/1.png.")
+    return parser
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 7:
-        print("Error: Missing required arguments.")
-        print_usage()
-        sys.exit(1)
+    import argparse
 
-    url = str(sys.argv[1])
-    try:
-        debug = int(sys.argv[2])
-        download = int(sys.argv[3])
-        shot = int(sys.argv[4])
-        maps = int(sys.argv[5])
-        force = int(sys.argv[6])
-    except ValueError:
-        print("Error: debug, download, shot, maps, force must be integers (1 or 0).")
-        print_usage()
-        sys.exit(1)
+    args = build_parser().parse_args()
 
-    # Parse optional arguments
-    username = None
-    password = None
-    research_folder = "../research/"  # default
-    
-    # Parse arguments from position 7 onwards
-    remaining_args = sys.argv[7:]  # All arguments after the required 6
-    
-    # Handle both --flag=value and positional argument styles
-    positional_args = []
-    
-    for arg in remaining_args:
-        if arg.startswith('--username='):
-            username = arg.split('=', 1)[1].strip('"')
-        elif arg.startswith('--password='):
-            password = arg.split('=', 1)[1].strip('"')
-        elif arg.startswith('--research-folder='):
-            research_folder = arg.split('=', 1)[1].strip('"')
-        else:
-            positional_args.append(arg)
-    
-    # Handle remaining positional arguments if no flags were used
-    if not username and not password and len(positional_args) >= 2:
-        # Check if first two args look like username/password (contain @ for email)
-        if '@' in positional_args[0]:
-            username = positional_args[0]
-            password = positional_args[1]
-            # Research folder might be the 3rd positional arg
-            if len(positional_args) >= 3:
-                research_folder = positional_args[2]
-        else:
-            # First arg doesn't look like email, assume it's research folder
-            research_folder = positional_args[0]
-    elif research_folder == "../research/" and len(positional_args) == 1:
-        # Only one positional arg and research folder wasn't set by flag
-        research_folder = positional_args[0]
-    
-    print(f"Using research folder: {research_folder}")
-    
-    if username and password:
-        print(f"Using provided credentials for user: {username}")
-        session = rc_session(username, password)
-        main(url, debug, download, shot, maps, force, session=session, research_folder=research_folder, username=username, password=password)
+    if args.username and args.password:
+        print(f"Using provided credentials for user: {args.username}")
+        session = rc_session(args.username, args.password)
     else:
         print("Proceeding without authentication.")
         session = requests.Session()
@@ -356,6 +291,12 @@ if __name__ == "__main__":
             "Connection": "keep-alive",
             "Upgrade-Insecure-Requests": "1",
         })
-        main(url, debug, download, shot, maps, force, session=session, research_folder=research_folder)
 
-import requests
+    screenshots_root = None
+    if args.screenshots_root:
+        screenshots_root = os.path.abspath(args.screenshots_root)
+
+    main(args.url, args.debug, args.download, args.shot, args.maps, args.force,
+         session=session, research_folder=args.research_folder,
+         username=args.username, password=args.password,
+         screenshots_root=screenshots_root)

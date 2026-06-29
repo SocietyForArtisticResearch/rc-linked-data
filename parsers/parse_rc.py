@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup
-import sys
+import argparse
 import json
 import requests
 import getpass
@@ -9,65 +9,29 @@ from common.rc_session import rc_session
 from parse_expo import main as parse_expo
 
 
-def print_usage():
-    usage = """
-Usage: python3 parse_rc.py <debug> <download> <shot> <maps> <force> <resume> [auth] [research_folder] [lookup]
-    
-Arguments:
-    <debug>           : Debug mode (1 for enabled, 0 for disabled).
-    <download>        : Download assets (1 for enabled, 0 for disabled).
-    <shot>            : Take screenshots (1 for enabled, 0 for disabled).
-    <maps>            : Generate visual maps (1 for enabled, 0 for disabled).
-    <force>           : Always parse an exposition, even when it has been parsed before (1 for enabled, 0 for disabled).
-    <resume>          : Update everything older than three days, even with force.
-    [auth]            : Optional. If provided, prompts for authentication (email and password).
-    [research_folder] : Optional. Path to research output folder (default: ../research/)
-    [lookup]          : Optional. Provide a url, will look for exposition links in that page and download only those.
-
-Examples:
-    Without authentication:
-        python3 parse_rc.py 1 1 0 0 0 0 ./my_research
-
-    With authentication:
-        python3 parse_rc.py 1 1 0 0 0 0 auth ./secure_research
-
-    With lookup:
-        python3 parse_rc.py 1 1 0 0 0 0 auth ./secure_research lookup
-"""
-    print(usage)
+def build_parser():
+    parser = argparse.ArgumentParser(description="Parse Research Catalogue expositions.")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode.")
+    parser.add_argument("--download", action="store_true", help="Download media assets.")
+    parser.add_argument("--shot", action="store_true", help="Take screenshots of weaves.")
+    parser.add_argument("--maps", action="store_true", help="Generate visual tool maps.")
+    parser.add_argument("--force", action="store_true", help="Re-parse expositions even if already parsed.")
+    parser.add_argument("--resume", action="store_true", help="Update everything older than three days.")
+    parser.add_argument("--auth", action="store_true", help="Prompt for RC login credentials.")
+    parser.add_argument("--research-folder", default="../research/", help="Path to research output folder (default: ../research/).")
+    parser.add_argument("--screenshots-root", default=None, help="Root path for screenshots, stored as root/expo_id/weave_id/1.png. If omitted, screenshots are stored inside each exposition's output folder.")
+    parser.add_argument("--lookup", default=None, metavar="URL", help="Provide a URL; will look for exposition links in that page and download only those.")
+    return parser
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 7:
-        print("Error: Missing required arguments.")
-        print_usage()
-        sys.exit(1)
+    args = build_parser().parse_args()
 
-    try:
-        debug = int(sys.argv[1])
-        download = int(sys.argv[2])
-        shot = int(sys.argv[3])
-        maps = int(sys.argv[4])
-        force = int(sys.argv[5])
-        resume = int(sys.argv[6])
-    except ValueError:
-        print("Error: debug, download, shot, maps, force, and resume must be integers (1 or 0).")
-        print_usage()
-        sys.exit(1)
-
-    # --- authentication & research folder handling ---
-    research_folder = "../research/"  # default
-    session = None
-
-    if len(sys.argv) > 7 and sys.argv[7] == "auth":
+    # --- session ---
+    if args.auth:
         user = input("Email: ")
         password = getpass.getpass("Password: ")
         session = rc_session(user, password)
-        if len(sys.argv) > 8:
-            research_folder = sys.argv[8]
-            lookup_arg_index = 9
-        else:
-            lookup_arg_index = 8
     else:
         session = requests.Session()
         session.headers.update({
@@ -86,15 +50,15 @@ if __name__ == "__main__":
             "Upgrade-Insecure-Requests": "1",
         })
         print("Proceeding without authentication.")
-        if len(sys.argv) > 7:
-            research_folder = sys.argv[7]
-            lookup_arg_index = 8
-        else:
-            lookup_arg_index = 7
 
-    # normalize and create research folder if missing
-    research_folder = os.path.abspath(research_folder)
+    # --- normalize paths ---
+    research_folder = os.path.abspath(args.research_folder)
     os.makedirs(research_folder, exist_ok=True)
+
+    screenshots_root = None
+    if args.screenshots_root:
+        screenshots_root = os.path.abspath(args.screenshots_root)
+        os.makedirs(screenshots_root, exist_ok=True)
 
     # --- file paths ---
     rc_dict_path = os.path.join(research_folder, "rc_dict.json")
@@ -130,10 +94,9 @@ if __name__ == "__main__":
         rc_advanced = {}
 
     # --- lookup mode ---
-    if len(sys.argv) > lookup_arg_index:
-        page_url = sys.argv[lookup_arg_index]
-        print(f"Looking for research in: {page_url}")
-        page = session.get(page_url)
+    if args.lookup:
+        print(f"Looking for research in: {args.lookup}")
+        page = session.get(args.lookup)
         soup = BeautifulSoup(page.content, 'html.parser')
         buttons = soup.find_all('a', class_='button consult-research')
         research = [button['href'] for button in buttons]
@@ -141,7 +104,8 @@ if __name__ == "__main__":
 
         for index, url in enumerate(research):
             print(f"Processing exposition {index + 1}/{len(research)}")
-            expo = parse_expo(url, debug, download, shot, maps, force, session, research_folder=research_folder)
+            expo = parse_expo(url, args.debug, args.download, args.shot, args.maps, args.force, session,
+                              research_folder=research_folder, screenshots_root=screenshots_root)
             if expo:
                 rc_dict[expo["id"]] = expo
                 rc_advanced[expo["id"]] = expo["meta"]
@@ -153,14 +117,14 @@ if __name__ == "__main__":
 
     # --- internal research mode ---
     else:
-        rcMisc.getInternalResearch(research_folder, resume)
+        rcMisc.getInternalResearch(research_folder, args.resume)
         print("Using internal research")
 
-        if resume:
+        if args.resume:
             print("Resuming parsing.")
             adv_research = os.path.join(research_folder, "outdated_expositions.json")
         else:
-            if force:
+            if args.force:
                 print("Forcing re-parse of all expositions.")
                 adv_research = os.path.join(research_folder, "internal_research.json")
             else:
@@ -175,8 +139,8 @@ if __name__ == "__main__":
             print(f"Processing exposition {index + 1}/{len(research)}")
             url = exposition["default-page"]
             meta = {key: value for key, value in exposition.items()}
-            expo = parse_expo(url, debug, download, shot, maps, force, session,
-                              research_folder=research_folder, **meta)
+            expo = parse_expo(url, args.debug, args.download, args.shot, args.maps, args.force, session,
+                              research_folder=research_folder, screenshots_root=screenshots_root, **meta)
             if expo:
                 rc_dict[expo["id"]] = expo
                 with open(rc_dict_path, 'w') as outfile:
