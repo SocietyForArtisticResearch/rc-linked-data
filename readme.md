@@ -16,4 +16,6 @@ Collection of tools to fetch and link data from different parts of the Research 
 * have a merged json that also includes page type for each weave within an exposition.
 * total word count (or character count, if easier) of the exposition
 
+# parse only screenshots of expositions marked in the redo-ids.txt file
+python3 parsers/parse_rc.py --screenshots-root /mnt/screenshots/screenshots --screenshot-ids local/redo-ids.txt
   
