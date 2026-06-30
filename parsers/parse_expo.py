@@ -174,6 +174,12 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
                         os.makedirs(weave_folder, exist_ok=True)
                         screenshot = rcScreenshot.screenshotBlock(clean_url(page), weave_folder, 1)
 
+                case "weave-text":
+                    if screenshots_base:
+                        weave_folder = os.path.join(screenshots_base, str(pageNumber))
+                        os.makedirs(weave_folder, exist_ok=True)
+                        screenshot = rcScreenshot.screenshotText(clean_url(page), weave_folder, 1)
+
                 case "iframe":
                     iframe_url = rcParsers.parse_iframe(parsed)
 

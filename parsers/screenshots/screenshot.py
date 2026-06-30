@@ -104,9 +104,61 @@ def screenshotBlock(url, path, num):
         path = str(e)
         zoom =  source#debug
         print(f"screenshot failed for url: {url}. Error: {e}")
-        
+
     driver.quit()
-        
+
+    return {
+        "file": path,
+        "weave_size": zoom
+    }
+
+def smartZoomText(driver):
+    try:
+        height = driver.execute_script("return document.body.scrollHeight")
+        width = driver.execute_script("return document.body.scrollWidth")
+        screen = smartScreenSize({"width": width, "height": height})
+        screen_width = screen["width"]
+        screen_height = screen["height"]
+        if width <= screen_width and height <= screen_height:
+            scale = 100
+        else:
+            raw_scaling = (
+                min(
+                    float(screen_width) / width,
+                    float(screen_height) / height,
+                )
+                * 100.0
+            )
+            scale = max(min(100, int(raw_scaling)), 25)
+    except Exception as e:
+        print(e)
+        scale = 25
+        height = "page not found"
+        width = "page not found"
+        screen = smartScreenSize({"width": 0, "height": 0})
+    return {"scale": scale, "height": height, "width": width, "screen": screen}
+
+def screenshotText(url, path, num):
+    driver = webdriver.Chrome(options=options)
+    print(f"Trying screenshot of {url}")
+    driver.get(url)
+    source = driver.page_source
+    try:
+        zoom_info = smartZoomText(driver)
+        screen = zoom_info["screen"]
+        zoom = str(zoom_info["scale"]) + "%"
+        driver.set_window_size(screen["width"], screen["height"])
+        driver.execute_script("document.body.style.zoom='" + zoom + "'")
+        path = f"{path}/{num}.png"
+        saveScreenshotAndResize(driver, path)
+        print(f"Saved screenshot at {path}, page height={zoom_info['height']}px, zoom={zoom}")
+    except Exception as e:
+        path = str(e)
+        zoom =  source#debug
+        print(f"screenshot failed for url: {url}. Error: {e}")
+
+    driver.quit()
+
     return {
         "file": path,
         "weave_size": zoom
