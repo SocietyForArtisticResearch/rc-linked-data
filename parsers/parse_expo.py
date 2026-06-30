@@ -26,7 +26,7 @@ def clean_url(url):
     return urlunparse(parsed_url._replace(path=clean_path.strip()))
 
 
-def main(url, debug, download, shot, maps, force, session=None, research_folder="../research/", username=None, password=None, screenshots_root=None, **meta):
+def main(url, debug, download, shot, maps, force, session=None, research_folder="../research/", username=None, password=None, screenshots_root=None, always_reparse=False, **meta):
     num = rcPages.getExpositionId(url)
     output_folder = os.path.join(research_folder, f"{num}")
 
@@ -94,7 +94,9 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
             return None
 
     # check if local copy exists
-    if os.path.exists(output_folder):
+    if always_reparse:
+        print(f"Redo mode: reparsing {output_folder} regardless of timestamp, keeping existing files in place.")
+    elif os.path.exists(output_folder):
         local_timestamp = os.path.getmtime(output_folder)
         print(f"Local folder timestamp: {datetime.datetime.fromtimestamp(local_timestamp)}")
         if modified + 86400 > local_timestamp:  # add one day tolerance

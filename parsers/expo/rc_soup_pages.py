@@ -2,6 +2,7 @@
 from bs4 import BeautifulSoup
 import requests
 import json
+import re
 from urllib.parse import urlparse, unquote, urljoin
 from urllib.parse import unquote
 
@@ -27,6 +28,18 @@ def getPageType(page):
 
 def getExpositionId(fullUrl):
     return fullUrl.split("/")[4]
+
+def resolveDefaultPageUrl(expoId, session):
+    """RC serves the bare /view/{id} URL without redirecting to the default
+    weave page. Fetch it and pull the default page id out of the page's own
+    links, so callers that only have an exposition id can still build a
+    proper /view/{id}/{page} url."""
+    bare_url = f"{RCURL}/view/{expoId}"
+    response = session.get(bare_url)
+    match = re.search(rf'/view/{expoId}/(\d+)', response.text)
+    if not match:
+        raise ValueError(f"Could not resolve default page for exposition {expoId} at {bare_url}.")
+    return f"{RCURL}/view/{expoId}/{match.group(1)}"
 
 def getPageId(fullUrl):
     return fullUrl.split("/")[5]
