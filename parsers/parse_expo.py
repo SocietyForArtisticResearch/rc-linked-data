@@ -180,7 +180,7 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
                         os.makedirs(weave_folder, exist_ok=True)
                         screenshot = rcScreenshot.screenshotText(clean_url(page), weave_folder, 1)
 
-                case "iframe":
+                case "weave-iframe":
                     iframe_url = rcParsers.parse_iframe(parsed)
 
             page_dict = {"id": pageNumber, "type": pageType}
