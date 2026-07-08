@@ -13,6 +13,12 @@ cd /mnt/screenshots/screenshots
 /home/casper/.opam/default/bin/ocaml structure_extract.ml ./ > screenshots.json
 cd /home/casper/devel/rc_data
 
+echo "fetch a fresh internal_research.json"
+rm internal_research.json
+#wget keywords.sarconference2016.net/internal_research.json
+wget map.rcdata.org/internal_research.json
+
+
 echo "make a new enriched json file"
 elm-cli run src/Main.elm
 

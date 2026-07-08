@@ -182,6 +182,10 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
 
                 case "weave-iframe":
                     iframe_url = rcParsers.parse_iframe(parsed)
+                    if screenshots_base:
+                        weave_folder = os.path.join(screenshots_base, str(pageNumber))
+                        os.makedirs(weave_folder, exist_ok=True)
+                        screenshot = rcScreenshot.screenshotText(clean_url(page), weave_folder, 1)
 
             page_dict = {"id": pageNumber, "type": pageType}
             if screenshot:

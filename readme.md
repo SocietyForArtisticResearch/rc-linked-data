@@ -17,5 +17,5 @@ Collection of tools to fetch and link data from different parts of the Research 
 * total word count (or character count, if easier) of the exposition
 
 # parse only screenshots of expositions marked in the redo-ids.txt file
-python3 parsers/parse_rc.py --screenshots-root /mnt/screenshots/screenshots --screenshot-ids local/redo-ids.txt
+python3 parsers/parse_rc.py --screenshots-root /mnt/screenshots/screenshots --screenshot-ids PATH
   
