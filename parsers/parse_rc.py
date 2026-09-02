@@ -34,7 +34,50 @@ def build_parser():
     return parser
 
 
-def run_screenshot_ids(args, session, research_folder, screenshots_root, rc_dict, rc_dict_path):
+def rebuild_aggregate_dicts(research_folder, rc_dict_path, advanced_research_dict_path):
+    """Rebuild rc_dict.json and rc_advanced.json from the per-exposition JSON files
+    parse_expo.py already writes to research/<id>/<id>.json, streaming straight to
+    disk one exposition at a time so the full dataset is never held in memory at
+    once (it has grown too large -- multiple GB -- to load or rebuild in one shot)."""
+    expo_ids = sorted(
+        entry.name for entry in os.scandir(research_folder)
+        if entry.is_dir() and entry.name.isdigit()
+    )
+
+    with open(rc_dict_path, "w") as dict_file, open(advanced_research_dict_path, "w") as adv_file:
+        dict_file.write("{\n")
+        adv_file.write("{\n")
+        first = True
+        for expo_id in expo_ids:
+            expo_file = os.path.join(research_folder, expo_id, f"{expo_id}.json")
+            if not os.path.exists(expo_file):
+                continue
+            try:
+                with open(expo_file, "r") as file:
+                    expo = json.load(file)
+            except (json.JSONDecodeError, OSError) as e:
+                print(f"Skipping unreadable {expo_file}: {e}")
+                continue
+
+            if not first:
+                dict_file.write(",\n")
+                adv_file.write(",\n")
+            first = False
+
+            key = json.dumps(expo_id)
+            dict_file.write(f"{key}: ")
+            json.dump(expo, dict_file, indent=2)
+
+            adv_file.write(f"{key}: ")
+            json.dump(expo.get("meta", {}), adv_file, indent=2)
+
+        dict_file.write("\n}\n")
+        adv_file.write("\n}\n")
+
+    print(f"Rebuilt {rc_dict_path} and {advanced_research_dict_path} from {len(expo_ids)} per-exposition file(s).")
+
+
+def run_screenshot_ids(args, session, research_folder, screenshots_root):
     logger = setup_logger(research_folder, retention_days=args.log_retention_days)
 
     with open(args.screenshot_ids, "r") as file:
@@ -90,10 +133,6 @@ def run_screenshot_ids(args, session, research_folder, screenshots_root, rc_dict
             failed_ids.add(expo_id)
             logger.error(f"Exposition {expo_id}: no data returned (inaccessible, restricted, or removed).")
             continue
-
-        rc_dict[expo["id"]] = expo
-        with open(rc_dict_path, "w") as outfile:
-            json.dump(rc_dict, outfile, indent=2)
 
         if expo.get("error"):
             failed_ids.add(expo_id)
@@ -151,41 +190,18 @@ if __name__ == "__main__":
         os.makedirs(screenshots_root, exist_ok=True)
 
     # --- file paths ---
+    # rc_dict.json / rc_advanced.json are aggregates rebuilt at the end of the run
+    # (see rebuild_aggregate_dicts) from the per-exposition files parse_expo.py
+    # writes to research/<id>/<id>.json. They are no longer loaded or rewritten
+    # per-exposition: this dataset has grown past what fits comfortably in memory
+    # (rc_dict.json alone is multiple GB), so loading it up front used to make the
+    # process get silently OOM-killed before printing anything.
     rc_dict_path = os.path.join(research_folder, "rc_dict.json")
     advanced_research_dict_path = os.path.join(research_folder, "rc_advanced.json")
 
-    # --- load existing dicts ---
-    try:
-        with open(rc_dict_path, "r") as file:
-            rc_dict = json.load(file)
-            print("RC dict loaded.")
-    except FileNotFoundError:
-        rc_dict = {}
-        print(f"File '{rc_dict_path}' not found. New dict created.")
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON: {e}")
-        rc_dict = {}
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        rc_dict = {}
-
-    try:
-        with open(advanced_research_dict_path, "r") as file:
-            rc_advanced = json.load(file)
-            print("RC advanced dict loaded.")
-    except FileNotFoundError:
-        rc_advanced = {}
-        print(f"File '{advanced_research_dict_path}' not found. New dict created.")
-    except json.JSONDecodeError as e:
-        print(f"Error decoding JSON: {e}")
-        rc_advanced = {}
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        rc_advanced = {}
-
     # --- screenshot-ids mode ---
     if args.screenshot_ids:
-        run_screenshot_ids(args, session, research_folder, screenshots_root, rc_dict, rc_dict_path)
+        run_screenshot_ids(args, session, research_folder, screenshots_root)
 
     # --- lookup mode ---
     elif args.lookup:
@@ -198,16 +214,8 @@ if __name__ == "__main__":
 
         for index, url in enumerate(research):
             print(f"Processing exposition {index + 1}/{len(research)}")
-            expo = parse_expo(url, args.debug, args.download, args.shot, args.maps, args.force, session,
-                              research_folder=research_folder, screenshots_root=screenshots_root)
-            if expo:
-                rc_dict[expo["id"]] = expo
-                rc_advanced[expo["id"]] = expo["meta"]
-
-                with open(rc_dict_path, 'w') as outfile:
-                    json.dump(rc_dict, outfile, indent=2)
-                with open(advanced_research_dict_path, 'w') as outfile:
-                    json.dump(rc_advanced, outfile, indent=2)
+            parse_expo(url, args.debug, args.download, args.shot, args.maps, args.force, session,
+                       research_folder=research_folder, screenshots_root=screenshots_root)
 
     # --- internal research mode ---
     else:
@@ -233,9 +241,8 @@ if __name__ == "__main__":
             print(f"Processing exposition {index + 1}/{len(research)}")
             url = exposition["default-page"]
             meta = {key: value for key, value in exposition.items()}
-            expo = parse_expo(url, args.debug, args.download, args.shot, args.maps, args.force, session,
-                              research_folder=research_folder, screenshots_root=screenshots_root, **meta)
-            if expo:
-                rc_dict[expo["id"]] = expo
-                with open(rc_dict_path, 'w') as outfile:
-                    json.dump(rc_dict, outfile, indent=2)
+            parse_expo(url, args.debug, args.download, args.shot, args.maps, args.force, session,
+                       research_folder=research_folder, screenshots_root=screenshots_root, **meta)
+
+    # --- rebuild rc_dict.json / rc_advanced.json from per-exposition files ---
+    rebuild_aggregate_dicts(research_folder, rc_dict_path, advanced_research_dict_path)
