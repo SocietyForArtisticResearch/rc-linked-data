@@ -26,6 +26,17 @@ def clean_url(url):
     return urlunparse(parsed_url._replace(path=clean_path.strip()))
 
 
+# maps the internal "weave-*" page type strings to the PageType values used
+# in screenshots/index.json (see the ScreenshotsToc/PageType shape in readme.md)
+PAGE_TYPE_ELM = {
+    "weave-graphical": "Graphical",
+    "weave-text": "Text",
+    "weave-block": "Block",
+    "weave-iframe": "Iframe",
+    "weave-html": "HTML",
+}
+
+
 def main(url, debug, download, shot, maps, force, session=None, research_folder="../research/", username=None, password=None, screenshots_root=None, always_reparse=False, **meta):
     num = rcPages.getExpositionId(url)
     output_folder = os.path.join(research_folder, f"{num}")
@@ -137,6 +148,7 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
         exp_dict["pages"] = {rcPages.getPageNumber(page): {} for page in pages}
         print(f"Found {len(pages)} pages.")
         all_links = defaultdict(set)
+        screenshot_entries = []
 
         for index, page in enumerate(pages):
             subpage = session.get(clean_url(page))
@@ -206,6 +218,35 @@ def main(url, debug, download, shot, maps, force, session=None, research_folder=
                 page_dict["url"] = iframe_url
 
             exp_dict["pages"][pageNumber] = page_dict
+
+            if screenshot and str(screenshot.get("file", "")).lower().endswith(".png") and pageType in PAGE_TYPE_ELM:
+                file_path = screenshot["file"]
+                weave_dir = os.path.dirname(file_path)
+                base_name = os.path.splitext(os.path.basename(file_path))[0]
+                screenshot_entries.append({
+                    "weave_id": pageNumber,
+                    "page_title": rcPages.getPageTitle(parsed, num, pageNumber),
+                    "url": clean_url(page),
+                    "screenshots": {
+                        "normal": os.path.relpath(file_path, screenshots_base),
+                        "compressed": os.path.relpath(os.path.join(weave_dir, f"compressed_{base_name}.jpg"), screenshots_base),
+                        "resized": os.path.relpath(os.path.join(weave_dir, f"resized_{base_name}.jpg"), screenshots_base),
+                    },
+                })
+
+        if screenshots_base:
+            try:
+                default_page_number = rcPages.getPageNumber(url)
+            except ValueError:
+                default_page_number = None
+            default_page_type = exp_dict["pages"].get(default_page_number, {}).get("type")
+            index_dict = {
+                "id": int(num),
+                "default_page_type": PAGE_TYPE_ELM.get(default_page_type, default_page_type),
+                "screenshots": screenshot_entries,
+            }
+            with open(os.path.join(screenshots_base, "index.json"), "w") as index_file:
+                json.dump(index_dict, index_file, indent=2)
 
     except Exception as e:
         error = f"An error occurred: {e}. Traceback: {traceback.format_exc()}"

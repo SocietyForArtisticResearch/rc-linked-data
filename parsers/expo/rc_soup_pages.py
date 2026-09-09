@@ -44,6 +44,19 @@ def resolveDefaultPageUrl(expoId, session):
 def getPageId(fullUrl):
     return fullUrl.split("/")[5]
 
+def getPageTitle(page, expositionId, pageNumber):
+    """Look up a page's title from the exposition's own contents navigation,
+    which lists one <a class="chapter-entry" href="/view/{expo}/{page}"> per
+    page and is present in the (already fetched) HTML of every page."""
+    target_href = f"/view/{expositionId}/{pageNumber}"
+    try:
+        for link in page.find_all("a", class_="chapter-entry"):
+            if link.get("href", "").rstrip("/") == target_href:
+                return link.get_text(strip=True)
+    except Exception:
+        pass
+    return None
+
 def getPageNumber(url):
     print(url)
     page = url.split("/")[5].split("#")[0]
