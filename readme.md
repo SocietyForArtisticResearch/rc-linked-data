@@ -124,3 +124,17 @@ type ScreenshotsToc =
     , default_page_type : PageType
     , screenshots : List WeaveScreenshot
     }
+
+# Completing the index.json files for the screenshots folder.
+
+I still have a huge back-catalogue of older screenshots folders. Instead of taking the screenshots all again just for generating an index.json, I want a little script that generates the index.json. It can construct it by combining the tree, and enriched.json. I have put the file tree in /tmp/test/tree.txt. You can learn a lot about the structure of enriched.json in the elm library rcapi (~/devel/elm/rcapi).
+
+I would like you to make a simple python script, that takes the root of the screenshots folder as argument and the location of a fresh enriched.json, that runs over the screenshots folder, and creates appropriate index.json for each folder, nothign else.
+
+An important hint: 
+The folder structure reflects that of the expositions, so the folder path is:
+expo-id/page-id/ becomes www.researchcatalogue.net/view/expo-id/page-id 
+js. 
+Where expo-id and page-id are just integers.
+
+
