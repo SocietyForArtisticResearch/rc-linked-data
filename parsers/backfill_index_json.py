@@ -13,11 +13,34 @@ import json
 import logging
 import os
 import re
+import shutil
+
+from screenshots.resize import resizeScreenshotSimple
 
 BASE_SCREENSHOT_RE = re.compile(r"^(\d+)\.png$")
 
+# Below this fraction of free disk space remaining, stop generating new
+# variant images rather than risk filling the disk.
+MIN_FREE_DISK_FRACTION = 0.25
+
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
+
+
+class LowDiskSpaceError(Exception):
+    pass
+
+
+def check_free_disk_space(path):
+    """Abort if free space on the volume holding `path` drops below the
+    MIN_FREE_DISK_FRACTION threshold. Checked before every generated write."""
+    usage = shutil.disk_usage(path)
+    free_fraction = usage.free / usage.total
+    if free_fraction < MIN_FREE_DISK_FRACTION:
+        raise LowDiskSpaceError(
+            f"Only {free_fraction:.1%} disk space free at {path} "
+            f"(need at least {MIN_FREE_DISK_FRACTION:.0%}). Aborting."
+        )
 
 
 def load_enriched(enriched_json_path):
@@ -51,6 +74,23 @@ def load_enriched(enriched_json_path):
     return enriched_by_id
 
 
+def ensure_variants(page_dir, base_name):
+    """Make sure compressed_/resized_ jpgs exist for base_name.png, generating
+    both from the source png via the same resize routine screenshot.py uses
+    (resizeScreenshotSimple writes both files in one call). Checks free disk
+    space right before generating, so a long backfill run stops early rather
+    than filling the disk partway through."""
+    compressed_path = os.path.join(page_dir, f"compressed_{base_name}.jpg")
+    resized_path = os.path.join(page_dir, f"resized_{base_name}.jpg")
+    if os.path.exists(compressed_path) and os.path.exists(resized_path):
+        return True
+
+    check_free_disk_space(page_dir)
+    source_png = os.path.join(page_dir, f"{base_name}.png")
+    resizeScreenshotSimple(source_png)
+    return os.path.exists(compressed_path) and os.path.exists(resized_path)
+
+
 def resolve_variant(page_dir, page_id, base_name, prefix):
     candidate_name = f"{prefix}{base_name}.jpg"
     if os.path.exists(os.path.join(page_dir, candidate_name)):
@@ -58,7 +98,7 @@ def resolve_variant(page_dir, page_id, base_name, prefix):
     return f"{page_id}/{base_name}.png"
 
 
-def build_screenshot_entries(expo_dir, expo_id, expo_enriched):
+def build_screenshot_entries(expo_dir, expo_id, expo_enriched, generate_variants):
     title_by_page_and_file = expo_enriched.get("title_by_page_and_file", {}) if expo_enriched else {}
     title_by_page = expo_enriched.get("title_by_page", {}) if expo_enriched else {}
 
@@ -80,6 +120,8 @@ def build_screenshot_entries(expo_dir, expo_id, expo_enriched):
 
         for base_name in base_files:
             file_name = f"{base_name}.png"
+            if generate_variants:
+                ensure_variants(page_dir, base_name)
             page_title = title_by_page_and_file.get(
                 (page_id, file_name), title_by_page.get(page_id)
             )
@@ -102,6 +144,10 @@ def main():
     parser.add_argument("screenshots_root", help="Root folder containing <expo-id>/<page-id>/ screenshot folders")
     parser.add_argument("enriched_json", help="Path to a fresh enriched.json dump")
     parser.add_argument("--force", action="store_true", help="Overwrite existing index.json files")
+    parser.add_argument(
+        "--no-generate-variants", action="store_true",
+        help="Don't generate missing compressed_/resized_ jpgs, just fall back to the .png as before",
+    )
     args = parser.parse_args()
 
     logger.info("Loading enriched.json from %s", args.enriched_json)
@@ -123,7 +169,23 @@ def main():
             skipped_existing += 1
             continue
 
-        entries = build_screenshot_entries(expo_entry.path, expo_id, enriched_by_id.get(expo_id))
+        try:
+            entries = build_screenshot_entries(
+                expo_entry.path, expo_id, enriched_by_id.get(expo_id),
+                generate_variants=not args.no_generate_variants,
+            )
+        except LowDiskSpaceError as e:
+            # Stop the whole run rather than risk filling the disk partway
+            # through a long backfill; index.json files written so far are
+            # already complete and safe to keep.
+            logger.warning(str(e))
+            logger.warning(
+                "Wrote %d index.json files, skipped %d with existing index.json, "
+                "skipped %d with no screenshots before aborting.",
+                written, skipped_existing, skipped_empty,
+            )
+            raise SystemExit(1)
+
         if not entries:
             skipped_empty += 1
             continue
