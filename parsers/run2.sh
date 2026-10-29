@@ -1,6 +1,7 @@
 #!/bin/bash
 cd /home/casper/devel/rc-linked-data/parsers || exit 1
-source venv/bin/activate
+# Use the venv's python directly, so it can't silently fall back to the system python
+PYTHON=/home/casper/devel/rc-linked-data/parsers/venv/bin/python
 
 # Define the script to run
 # python3 parse_rc.py [--debug] [--download] [--shot] [--maps] [--force] [--resume]
@@ -12,7 +13,7 @@ SCRIPT=(parse_rc.py --shot --screenshots-root /mnt/screenshots/screenshots --map
 
     
 # Run the script in the background
-python3 "${SCRIPT[@]}" &
+"$PYTHON" "${SCRIPT[@]}" &
 
 # Get the PID of the running script
 PID=$!
